@@ -14,7 +14,7 @@ cp .env.example .env   # fill in API keys
 | Step | What it does | Command | Output |
 |---|---|---|---|
 | 0 | Render the destination polygon with OSM accommodation for review | `uv run python -m src.review_polygon` | `data/review/polygon_map.html` |
-| 1 | Collect accommodation from Google Maps (DataForSEO), deduplicate, flag in-destination | `uv run python -m src.collect_places` | `data/processed/places.parquet`, `place_search_saturation.csv` |
+| 1 | Collect accommodation from Google Maps (DataForSEO priority queue, within the $1 trial credit), deduplicate, flag in-destination | `uv run python -m src.collect_places` | `data/processed/places.parquet`, `place_search_saturation.csv` |
 
 Later steps (prompts, engine queries, matching, metrics, app) are added as they are built.
 

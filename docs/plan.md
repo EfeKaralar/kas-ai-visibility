@@ -7,6 +7,7 @@
 ## Scope and data
 - **Destination:** Kaş town + Çukurbağ peninsula, hand-drawn polygon (`config/kas_polygon.geojson`). Kalkan, Meis/Kastellorizo, inland villages = outside.
 - **Place list:** DataForSEO Google Maps, keywords "hotel"/"otel" over a grid. All returned accommodation types kept and analysed.
+- **DataForSEO spend:** stay inside the $1 new-account trial credit (the minimum top-up is $50). Priority queue (~$0.0012/search, ~1 min), DataForSEO-specific cap $0.90, account balance checked before each batch. Estimated total ~$0.70 including lookups and the stretch goal. The live-query box makes no DataForSEO calls. Fallback if the credit runs out: Serper's free 2,500 searches for name lookups.
 - **Unmatched recommendations:** one Maps lookup per unique name → outside / not captured in Step 1 / unverifiable.
 
 ## Prompts

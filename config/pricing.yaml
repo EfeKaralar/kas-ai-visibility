@@ -1,3 +1,3 @@
 # Estimated unit prices (USD). Verify against provider pricing pages before the main run.
 dataforseo:
-  maps_live_per_call: 0.002            # Google Maps SERP, live mode, per 100 results
+  maps_priority_per_call: 0.0012       # Google Maps SERP, priority queue (~1 min), per 100 results

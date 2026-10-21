@@ -11,6 +11,10 @@ place_collection:
   zoom: "16z"
   depth: 100                           # results per call (DataForSEO bills per 100)
 
+dataforseo:
+  credit_cap_usd: 0.90                 # stay inside the $1 trial credit; no $50 top-up planned
+  tasks_per_post: 100                  # API maximum per task_post request
+
 budget:
   warn_usd: 30
   hard_cap_usd: 50

@@ -9,16 +9,12 @@ per request; the deduplicated list goes to data/processed/places.parquet.
 import math
 
 import pandas as pd
-import requests
 from shapely.geometry import Point
 from unidecode import unidecode
 
-from src.common import (PRICING, PROCESSED, RAW, SETTINGS, Budget, cache_get, cache_put,
-                        destination_polygon, haversine_km, km_from_center, now_iso, request_hash,
-                        require_env)
+from src.common import PROCESSED, SETTINGS, Budget, destination_polygon, haversine_km, km_from_center
+from src.dataforseo import DataForSEO
 
-ENDPOINT = "https://api.dataforseo.com/v3/serp/google/maps/live/advanced"
-CACHE = RAW / "dataforseo" / "maps"
 STAGE = "place_collection"
 
 
@@ -39,24 +35,10 @@ def grid_points(polygon, spacing_km: float) -> list[tuple[float, float]]:
     return points
 
 
-def maps_search(keyword: str, lat: float, lon: float, auth: tuple, budget: Budget) -> dict:
+def search_task(keyword: str, lat: float, lon: float) -> dict:
     config = SETTINGS["place_collection"]
-    task = {"keyword": keyword, "location_coordinate": f"{lat},{lon},{config['zoom']}",
+    return {"keyword": keyword, "location_coordinate": f"{lat},{lon},{config['zoom']}",
             "language_code": config["language_code"], "depth": config["depth"], "device": "desktop"}
-    key = request_hash(task)
-    if cached := cache_get(CACHE, key):
-        return cached
-    budget.check(PRICING["dataforseo"]["maps_live_per_call"])
-    response = requests.post(ENDPOINT, json=[task], auth=auth, timeout=120)
-    response.raise_for_status()
-    result = response.json()["tasks"][0]
-    if result["status_code"] != 20000:
-        raise RuntimeError(f"DataForSEO task failed: {result['status_code']} {result['status_message']}")
-    budget.record(STAGE, "dataforseo", result.get("cost") or PRICING["dataforseo"]["maps_live_per_call"],
-                  f"{keyword} @ {lat},{lon}")
-    record = {"request": task, "fetched_at": now_iso(), "response": result}
-    cache_put(CACHE, key, record)
-    return record
 
 
 def normalize_name(name: str) -> str:
@@ -105,22 +87,22 @@ def deduplicate(raw: pd.DataFrame) -> pd.DataFrame:
 
 
 def main():
-    auth = tuple(require_env("DATAFORSEO_LOGIN", "DATAFORSEO_PASSWORD"))
     config, budget = SETTINGS["place_collection"], Budget()
+    client = DataForSEO(STAGE, budget)
     polygon = destination_polygon()
     points = grid_points(polygon, config["grid_spacing_km"])
-    print(f"{len(points)} grid points x {len(config['keywords'])} keywords = "
-          f"{len(points) * len(config['keywords'])} searches")
+    searches = [(keyword, lat, lon) for lat, lon in points for keyword in config["keywords"]]
+    print(f"{len(points)} grid points x {len(config['keywords'])} keywords = {len(searches)} searches")
+
+    records = client.maps_searches([search_task(*search) for search in searches])
 
     rows, saturation, seen = [], [], set()
-    for index, (lat, lon) in enumerate(points, start=1):
-        for keyword in config["keywords"]:
-            items = parse_items(maps_search(keyword, lat, lon, auth, budget))
-            rows += items
-            seen |= {item["cid"] or item["place_id"] for item in items}
-            saturation.append({"search": len(saturation) + 1, "keyword": keyword, "lat": lat, "lon": lon,
-                               "returned": len(items), "cumulative_unique": len(seen)})
-        print(f"  point {index}/{len(points)}: {len(seen)} unique places so far")
+    for (keyword, lat, lon), record in zip(searches, records):
+        items = parse_items(record)
+        rows += items
+        seen |= {item["cid"] or item["place_id"] for item in items}
+        saturation.append({"search": len(saturation) + 1, "keyword": keyword, "lat": lat, "lon": lon,
+                           "returned": len(items), "cumulative_unique": len(seen)})
 
     places = deduplicate(pd.DataFrame(rows))
     places["in_destination"] = [polygon.contains(Point(lon, lat)) for lat, lon in zip(places.lat, places.lon)]
