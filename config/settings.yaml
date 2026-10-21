@@ -44,6 +44,16 @@ serper:
   credits_per_maps_call: 3             # assumed until the first response reports actual credits
   credit_cap: 2000                     # of the 2,500 free signup credits; leaves room for name lookups
 
+models:                                # LangChain "provider:model" strings
+  helper: "deepseek:deepseek-chat"     # DeepSeek V3.2 non-thinking: prompt writing, matching, labelling
+
+prompt_generation:
+  languages: [en, tr, de, ru]
+  styles:                              # rotated across base prompts for natural variety
+    - "short and direct, like a quick message"
+    - "conversational, like asking a well-travelled friend"
+    - "a little more detailed, explaining the situation first"
+
 budget:
   warn_usd: 30
   hard_cap_usd: 50

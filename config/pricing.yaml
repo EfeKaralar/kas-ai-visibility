@@ -1,2 +1,7 @@
 # Estimated unit prices (USD). Verify against provider pricing pages before the main run.
 # Serper (Google Maps data) is used within its free signup credits and tracked in credits, not USD.
+
+llm:                                   # keyed by the LangChain model string in settings.yaml
+  "deepseek:deepseek-chat":
+    input_per_million: 0.28            # cache-miss rate; cache hits are cheaper, so this overestimates
+    output_per_million: 0.42
