@@ -1,0 +1,35 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Kaş town + Çukurbağ peninsula + Limanağzı",
+        "status": "draft - awaiting approval",
+        "note": "Hand-drawn. Principle: include what tourists consider Kaş. Excludes Kalkan, Gökseki (north shore of the bay), inland villages (Çukurbağ village, Pınarbaşı), the Bayındır coast and Meis/Kastellorizo."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [29.568, 36.184],
+          [29.568, 36.192],
+          [29.585, 36.1985],
+          [29.605, 36.2015],
+          [29.620, 36.2045],
+          [29.630, 36.2095],
+          [29.648, 36.2115],
+          [29.664, 36.2075],
+          [29.670, 36.199],
+          [29.664, 36.190],
+          [29.656, 36.179],
+          [29.652, 36.1705],
+          [29.640, 36.1705],
+          [29.635, 36.180],
+          [29.620, 36.183],
+          [29.595, 36.180],
+          [29.568, 36.184]
+        ]]
+      }
+    }
+  ]
+}

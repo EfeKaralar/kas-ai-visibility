@@ -1,0 +1,17 @@
+destination:
+  name: "Kaş"
+  center: [36.1994, 29.6413]          # lat, lon (OSM place=town)
+  polygon_file: config/kas_polygon.geojson
+
+place_collection:
+  provider: dataforseo
+  keywords: ["hotel", "otel"]          # agreed: hotel searches only, all returned types kept
+  language_code: "en"
+  grid_spacing_km: 0.8                 # grid points over the polygon's bounding box
+  zoom: "16z"
+  depth: 100                           # results per call (DataForSEO bills per 100)
+
+budget:
+  warn_usd: 30
+  hard_cap_usd: 50
+  ledger_file: data/budget_ledger.jsonl

@@ -1,0 +1,23 @@
+[project]
+name = "kas-ai-visibility"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "folium>=0.20.0",
+    "langchain==1.4.6",
+    "langchain-anthropic==1.7.6",
+    "langchain-core==1.6.12",
+    "langchain-deepseek==1.1.1",
+    "langchain-google-genai==4.4.2",
+    "langchain-openai==1.7.2",
+    "matplotlib>=3.11.2",
+    "pandas>=3.0.6",
+    "pyarrow>=26.0.0",
+    "python-dotenv>=1.2.4",
+    "pyyaml>=6.0.3",
+    "rapidfuzz>=3.14.6",
+    "requests>=2.34.2",
+    "shapely>=2.2.0",
+    "streamlit>=1.66.0",
+    "unidecode>=1.4.0",
+]
