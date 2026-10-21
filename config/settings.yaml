@@ -47,6 +47,27 @@ serper:
 models:                                # LangChain "provider:model" strings
   helper: "deepseek:deepseek-chat"     # DeepSeek V3.2 non-thinking: prompt writing, matching, labelling
 
+engines:                               # plain calls: user prompt only, provider defaults otherwise
+  openai:
+    model: "openai:gpt-6-luna"
+    init: {use_responses_api: true, include: ["web_search_call.action.sources"]}
+    tools: [{type: web_search}]
+  gemini:
+    model: "google_genai:gemini-3.8-flash"
+    init: {}
+    tools: [{google_search: {}}]
+  anthropic:
+    model: "anthropic:claude-haiku-5-5"
+    init: {max_tokens: 8000}
+    tools: [{type: web_search_20250305, name: web_search, max_uses: 5}]   # max_uses is a cost guard
+
+engine_queries:
+  repeats: 3
+  workers: 6                           # concurrent calls across engines
+  timeout_seconds: 180
+  retries: 3                           # per call, exponential backoff on errors
+  pilot_base_prompts: [couple_quiet_1, family_kids_1, remote_worker_1, honeymooners_2]   # x4 languages x3 engines, repeat 1
+
 prompt_generation:
   languages: [en, tr, de, ru]
   styles:                              # rotated across base prompts for natural variety

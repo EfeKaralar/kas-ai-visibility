@@ -1,7 +1,21 @@
-# Estimated unit prices (USD). Verify against provider pricing pages before the main run.
+# Estimated unit prices (USD), from provider pages and third-party trackers checked 2026-10-21.
+# Verify against provider pricing pages before the main run.
 # Serper (Google Maps data) is used within its free signup credits and tracked in credits, not USD.
 
 llm:                                   # keyed by the LangChain model string in settings.yaml
   "deepseek:deepseek-chat":
     input_per_million: 0.28            # cache-miss rate; cache hits are cheaper, so this overestimates
     output_per_million: 0.42
+  "openai:gpt-6-luna":
+    input_per_million: 0.10
+    output_per_million: 0.50           # reasoning tokens are billed as output
+    per_search: 0.010                  # $10 / 1,000 web search calls (third-party figure)
+  "google_genai:gemini-3.8-flash":
+    input_per_million: 0.75            # introductory rate until 2026-12-31
+    output_per_million: 3.75
+    per_search: 0.014                  # $14 / 1,000 grounded search queries ...
+    free_searches_per_month: 5000      # ... after 5,000 free per month
+  "anthropic:claude-haiku-5-5":
+    input_per_million: 0.10
+    output_per_million: 0.50
+    per_search: 0.010                  # $10 / 1,000 searches (Anthropic pricing page)
