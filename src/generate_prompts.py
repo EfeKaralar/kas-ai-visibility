@@ -33,6 +33,10 @@ Rules for every version:
 - Mention every listed need and no other needs or preferences.
 - Ask for specific places to stay. Do not name any hotel or area of Kaş yourself.
 - Do not mention AI, prompts or this task.
+- Write the town's name the way each language normally does: Kaş in English, Turkish and German,
+  Каш in Russian.
+- Give the traveler one concrete identity: write "my wife" or "my husband", never alternatives
+  joined with a slash such as "husband/wife". Keep grammatical gender consistent throughout.
 
 Languages: write each version the way a native speaker from that country would naturally write
 it, with their own idioms and word order. Do not translate from the English version; keep the
