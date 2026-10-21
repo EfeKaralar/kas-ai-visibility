@@ -8,6 +8,7 @@ goes to data/processed/places.parquet.
 """
 
 import math
+import re
 
 import pandas as pd
 from shapely.geometry import Point
@@ -17,6 +18,10 @@ from src.common import PROCESSED, SETTINGS, Budget, destination_polygon, haversi
 from src.serper import Serper
 
 STAGE = "place_collection"
+# Booking-channel listings for single units, e.g. "Kale Apart - Studio with Sea View"
+UNIT_LISTING = re.compile(r"\s-\s.*\b(apartment|studio|room|house|suite|villa|bedroom|daire|oda|view|balcony|"
+                          r"loft|penthouse|bungalow)\b", re.IGNORECASE)
+SAME_PLACE_KM = 0.3
 
 
 def grid_points(polygon, spacing_km: float) -> list[tuple[float, float]]:
@@ -55,27 +60,43 @@ def parse_places(record: dict) -> list[dict]:
     return rows
 
 
+def property_name(name: str) -> str:
+    """Strip a unit description so unit listings share their property's name."""
+    return name.split(" - ")[0].strip() if UNIT_LISTING.search(name or "") else name
+
+
 def deduplicate(raw: pd.DataFrame) -> pd.DataFrame:
-    """Merge by Google cid, then merge same-name entries within 100 m."""
+    """Merge by Google cid, then merge entries with the same property name within 300 m.
+
+    The second pass also folds single-unit listings into their property; the entry with
+    the most reviews represents the property and the others are counted in unit_listings.
+    """
     raw = raw.assign(key=raw["cid"].fillna(raw["place_id"]))
     groups = raw.groupby("key", sort=False)
     places = groups.first().reset_index()
-    places["search_hits"] = groups.size().values
     places["keywords"] = groups["keyword"].agg(lambda keywords: sorted(set(keywords))).values
+    places["search_hits"] = groups.size().values
 
+    places["listing_name"] = places["name"]
+    places["name"] = places["name"].map(property_name)
     places["normalized_name"] = places["name"].map(normalize_name)
     places = places.sort_values("review_count", ascending=False, na_position="last")
-    kept, merged = [], 0
+    representative = {}
+    kept = []
     for place in places.itertuples():
         twin = next((other for other in kept if other.normalized_name == place.normalized_name
-                     and haversine_km(other.lat, other.lon, place.lat, place.lon) < 0.1), None)
+                     and haversine_km(other.lat, other.lon, place.lat, place.lon) < SAME_PLACE_KM), None)
         if twin is None:
             kept.append(place)
-        else:
-            merged += 1
-    if merged:
-        print(f"Merged {merged} same-name near-duplicates")
-    return places[places["key"].isin([place.key for place in kept])].drop(columns=["keyword"])
+        representative[place.key] = (twin or place).key
+    places["representative"] = places["key"].map(representative)
+    merged = places.groupby("representative")
+    places = places[places["key"] == places["representative"]].set_index("key")
+    places["unit_listings"] = merged.size() - 1
+    places["keywords"] = merged["keywords"].agg(lambda lists: sorted({k for keywords in lists for k in keywords}))
+    places["search_hits"] = merged["search_hits"].sum()
+    print(f"Merged {int(places['unit_listings'].sum())} duplicate or single-unit listings into their property")
+    return places.reset_index().drop(columns=["keyword", "representative"])
 
 
 def main():

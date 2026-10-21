@@ -4,7 +4,7 @@ destination:
   polygon_file: config/kas_polygon.geojson
 
 place_collection:
-  keywords: ["hotel", "otel"]          # agreed: hotel searches only, all returned types kept
+  keywords: ["hotel", "otel", "pansiyon", "apart"]   # pansiyon/apart added after OSM cross-check showed missing small properties
   grid_spacing_km: 0.8                 # grid points over the polygon's bounding box
   max_pages: 3                         # stop earlier when a page adds no new places
 

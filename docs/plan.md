@@ -6,7 +6,7 @@
 
 ## Scope and data
 - **Destination:** Kaş town + Çukurbağ peninsula, hand-drawn polygon (`config/kas_polygon.geojson`). Kalkan, Meis/Kastellorizo, inland villages = outside.
-- **Place list:** Google Maps via Serper.dev, keywords "hotel"/"otel" over a grid, paging until a page adds nothing new. All returned accommodation types kept and analysed.
+- **Place list:** Google Maps via Serper.dev, keywords "hotel"/"otel"/"pansiyon"/"apart" over a 46-point grid, paging (max 3) until a page adds nothing new. "pansiyon"/"apart" were added after an OSM cross-check showed small properties missing. All returned accommodation types kept and analysed; single-unit listings merged into their property. Extra pages deferred to conserve credits (Serper's paid plans also start at $50).
 - **Google Maps data provider:** Serper.dev on its free 2,500 signup credits (no card). DataForSEO was dropped because account activation requires a $50 payment. Serper usage is capped at 2,000 credits, tracked in the budget ledger; the rest is reserved for name lookups.
 - **Unmatched recommendations:** one Serper Maps lookup per unique name → outside / not captured in Step 1 / unverifiable.
 - **Stretch goal data source:** open. Serper does not return hotel amenities; candidates are SerpApi's free 250 searches/month (Google Hotels property details) or Google Places API. Decide when the stretch goal starts.
