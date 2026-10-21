@@ -4,6 +4,7 @@
 # (see docs/plan.md); {budget} is rendered in € or TL at eur_try_rate.
 
 eur_try_rate: 56.3        # 13 Sep 2026 (LongForecast). Change only before the main engine run.
+trip_year: 2027           # added after each month when prompts are rendered; all months have passed in 2026
 
 budget_bands_eur:
   low: 70                 # pensions and simple hotels, ~€35-75

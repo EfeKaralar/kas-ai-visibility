@@ -8,6 +8,8 @@ Kept from day 1 for the presentation and later analysis.
 - **Correlation, not causation.** Popularity (review count) strongly influences recommendations; the PoC describes patterns and does not prove causes.
 - **Cited ≠ consulted.** Only URLs the answer cites are counted; engines may read more than they cite.
 
+- **Trip dates are a month and year, not exact dates.** Prompts say e.g. "in September 2027" (the year is added by fixed grammar rules, since every month had passed in 2026). Engines may still hedge on prices and availability without exact dates.
+
 ## Place list
 - Depends on Google Maps' coverage of Kaş.
 - Collected with "hotel", "otel", "pansiyon" and "apart" searches on a 46-point grid. Against OpenStreetMap, 77 of 104 named places in Kaş were found (74%). Of the missing places with "hotel" in the name, 3 were confirmed absent from Google Maps (likely closed or renamed).

@@ -3,13 +3,16 @@
 One helper-LLM call per base prompt writes all four language versions together, so they
 share the same facts but are phrased naturally rather than translated. The LLM writes a
 {budget} placeholder; amounts are rendered afterwards (€ for en/de/ru, TL at eur_try_rate
-for tr), so changing the rate needs no LLM calls.
+for tr), so changing the rate needs no LLM calls. The trip year is added after the month the
+same way, with per-language grammar rules (every month in the prompts has passed in 2026).
 
     uv run python -m src.generate_prompts
 
 Outputs: data/processed/prompts.parquet (one row per prompt x language) and
 data/review/prompts_review.md for human review before any engine call.
 """
+
+import re
 
 import pandas as pd
 from pydantic import BaseModel, Field
@@ -66,6 +69,43 @@ def render_budget(language: str, euros: int, eur_try_rate: float) -> str:
     return f"€{euros}" if language == "en" else f"{euros} €"
 
 
+TURKISH_MONTHS = {"mayıs": "Mayıs", "haziran": "Haziran", "temmuz": "Temmuz", "eylül": "Eylül", "ekim": "Ekim"}
+TURKISH_LOCATIVE = {"mayısta": "mayıs", "haziranda": "haziran", "temmuzda": "temmuz", "eylülde": "eylül",
+                    "ekimde": "ekim", "mayıs'ta": "mayıs", "haziran'da": "haziran", "temmuz'da": "temmuz",
+                    "eylül'de": "eylül", "ekim'de": "ekim"}
+
+
+def _turkish_month(word: str) -> str:
+    return TURKISH_MONTHS[word.lower()]
+
+
+# Each rule rewrites one month phrase into a dated one, respecting each language's grammar.
+YEAR_RULES = {
+    "en": [(r"\bthis (May|June|July|September|October)\b", lambda m, y: f"in {m[1]} {y}"),
+           (r"\b(in|for|of) (May|June|July|September|October)\b(?! \d{4})", lambda m, y: f"{m[1]} {m[2]} {y}")],
+    "de": [(r"\b([Ii]m) (Mai|Juni|Juli|September|Oktober)\b(?! \d{4})", lambda m, y: f"{m[1]} {m[2]} {y}"),
+           (r"\bdes Oktobers\b", lambda m, y: f"des Oktobers {y}")],
+    "tr": [(r"\b(?:bu )?(mayıs|haziran|temmuz|eylül|ekim) ayında", lambda m, y: f"{y} {_turkish_month(m[1])} ayında"),
+           (r"\b(?:bu )?(" + "|".join(TURKISH_LOCATIVE) + r")\b",
+            lambda m, y: f"{_turkish_month(TURKISH_LOCATIVE[m[1].lower()])} {y}'de"),
+           (r"\bekimin\b", lambda m, y: f"{y} Ekim ayının")],
+    "ru": [(r"\b([Вв]) (мае|июне|июле|сентябре|октябре)\b(?! \d{4})", lambda m, y: f"{m[1]} {m[2]} {y} года"),
+           (r"\bчасть (октября)\b", lambda m, y: f"часть {m[1]} {y} года")],
+}
+
+
+def add_trip_year(language: str, text: str, year: int) -> str:
+    """Date the trip's month; exactly one month phrase per prompt must be rewritten."""
+    replaced = 0
+    for pattern, rewrite in YEAR_RULES[language]:
+        text, count = re.subn(pattern, lambda match: rewrite(match, year), text, flags=re.IGNORECASE
+                              if language == "tr" else 0)
+        replaced += count
+    if replaced != 1:
+        raise ValueError(f"Expected one month phrase in this {language} prompt, rewrote {replaced}: {text[:120]}")
+    return text
+
+
 def generate_versions(persona: dict, needs: list[str], style: str, budget: Budget) -> PromptVersions:
     messages = [("system", INSTRUCTIONS), ("human", brief(persona, needs, style))]
     for _ in range(2):
@@ -112,7 +152,9 @@ def main():
                     "prompt_id": f"{base_id}_{language}", "base_id": base_id, "persona": persona_id,
                     "attributes": attribute_ids, "language": language, "style": style,
                     "budget_band": persona["budget_band"], "budget_eur": euros, "budget_display": amount,
-                    "template": versions[language], "text": versions[language].replace(PLACEHOLDER, amount),
+                    "template": versions[language],
+                    "text": add_trip_year(language, versions[language].replace(PLACEHOLDER, amount),
+                                          config["trip_year"]),
                 })
             index += 1
             print(f"  {base_id}: done")
