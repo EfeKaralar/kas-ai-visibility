@@ -101,11 +101,11 @@ class Budget:
         if self.spent() + next_cost > self.cap:
             raise BudgetExceeded(f"Hard cap ${self.cap} would be exceeded (spent ${self.spent():.2f}).")
 
-    def record(self, stage: str, provider: str, usd: float, detail: str = "") -> None:
+    def record(self, stage: str, provider: str, usd: float, detail: str = "", **extra) -> None:
         before = self.spent()
         self.ledger.parent.mkdir(parents=True, exist_ok=True)
         with self.ledger.open("a") as ledger:
             ledger.write(json.dumps({"timestamp": now_iso(), "stage": stage, "provider": provider,
-                                     "usd": usd, "detail": detail}) + "\n")
+                                     "usd": usd, "detail": detail, **extra}) + "\n")
         if before < self.warn <= before + usd:
             print(f"WARNING: spend passed the ${self.warn} target (now ${before + usd:.2f}).")

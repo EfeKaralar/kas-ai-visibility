@@ -1,7 +1,8 @@
-"""Collect the destination's accommodation from Google Maps via DataForSEO.
+"""Collect the destination's accommodation from Google Maps via Serper.dev.
 
-Grid of search points over the polygon x hotel keywords. Raw responses are cached
-per request; the deduplicated list goes to data/processed/places.parquet.
+Grid of search points over the polygon x hotel keywords, paging each search until a
+page adds no new places. Raw responses are cached per request; the deduplicated list
+goes to data/processed/places.parquet.
 
     uv run python -m src.collect_places
 """
@@ -13,7 +14,7 @@ from shapely.geometry import Point
 from unidecode import unidecode
 
 from src.common import PROCESSED, SETTINGS, Budget, destination_polygon, haversine_km, km_from_center
-from src.dataforseo import DataForSEO
+from src.serper import Serper
 
 STAGE = "place_collection"
 
@@ -35,31 +36,22 @@ def grid_points(polygon, spacing_km: float) -> list[tuple[float, float]]:
     return points
 
 
-def search_task(keyword: str, lat: float, lon: float) -> dict:
-    config = SETTINGS["place_collection"]
-    return {"keyword": keyword, "location_coordinate": f"{lat},{lon},{config['zoom']}",
-            "language_code": config["language_code"], "depth": config["depth"], "device": "desktop"}
-
-
 def normalize_name(name: str) -> str:
     return " ".join(unidecode(name or "").lower().replace("&", " ").split())
 
 
-def parse_items(record: dict) -> list[dict]:
+def parse_places(record: dict) -> list[dict]:
     rows = []
-    for result in record["response"].get("result") or []:
-        for item in result.get("items") or []:
-            if item.get("type") != "maps_search" or item.get("latitude") is None:
-                continue
-            rating = item.get("rating") or {}
-            rows.append({
-                "cid": item.get("cid"), "place_id": item.get("place_id"), "name": item.get("title"),
-                "category": item.get("category"), "additional_categories": item.get("additional_categories") or [],
-                "address": item.get("address"), "lat": item["latitude"], "lon": item["longitude"],
-                "rating": rating.get("value"), "review_count": rating.get("votes_count"),
-                "website": item.get("url"), "domain": item.get("domain"),
-                "keyword": record["request"]["keyword"],
-            })
+    for item in record["response"].get("places") or []:
+        if item.get("latitude") is None:
+            continue
+        rows.append({
+            "cid": item.get("cid"), "place_id": item.get("placeId"), "name": item.get("title"),
+            "category": item.get("type"), "categories": item.get("types") or [],
+            "address": item.get("address"), "lat": item["latitude"], "lon": item["longitude"],
+            "rating": item.get("rating"), "review_count": item.get("ratingCount"),
+            "website": item.get("website"), "keyword": record["request"]["q"],
+        })
     return rows
 
 
@@ -88,21 +80,27 @@ def deduplicate(raw: pd.DataFrame) -> pd.DataFrame:
 
 def main():
     config, budget = SETTINGS["place_collection"], Budget()
-    client = DataForSEO(STAGE, budget)
+    client = Serper(STAGE, budget)
     polygon = destination_polygon()
     points = grid_points(polygon, config["grid_spacing_km"])
-    searches = [(keyword, lat, lon) for lat, lon in points for keyword in config["keywords"]]
-    print(f"{len(points)} grid points x {len(config['keywords'])} keywords = {len(searches)} searches")
-
-    records = client.maps_searches([search_task(*search) for search in searches])
+    print(f"{len(points)} grid points x {len(config['keywords'])} keywords, "
+          f"up to {config['max_pages']} pages each")
 
     rows, saturation, seen = [], [], set()
-    for (keyword, lat, lon), record in zip(searches, records):
-        items = parse_items(record)
-        rows += items
-        seen |= {item["cid"] or item["place_id"] for item in items}
-        saturation.append({"search": len(saturation) + 1, "keyword": keyword, "lat": lat, "lon": lon,
-                           "returned": len(items), "cumulative_unique": len(seen)})
+    for index, (lat, lon) in enumerate(points, start=1):
+        for keyword in config["keywords"]:
+            for page in range(1, config["max_pages"] + 1):
+                items = parse_places(client.maps_search(keyword, lat, lon, page))
+                new = {item["cid"] or item["place_id"] for item in items} - seen
+                seen |= new
+                rows += items
+                saturation.append({"search": len(saturation) + 1, "keyword": keyword, "lat": lat, "lon": lon,
+                                   "page": page, "returned": len(items), "new": len(new),
+                                   "cumulative_unique": len(seen)})
+                if not items or not new:
+                    break
+        print(f"  point {index}/{len(points)}: {len(seen)} unique places, "
+              f"{client.credits_used()} credits used")
 
     places = deduplicate(pd.DataFrame(rows))
     places["in_destination"] = [polygon.contains(Point(lon, lat)) for lat, lon in zip(places.lat, places.lon)]
@@ -118,7 +116,7 @@ def main():
     print("Categories inside destination:")
     print(inside["category"].value_counts(dropna=False).to_string())
     print(f"With website: {inside.website.notna().sum()}, with rating: {inside.rating.notna().sum()}")
-    print(f"Spend so far: ${budget.spent():.3f}")
+    print(f"Serper credits used: {client.credits_used()}")
 
 
 if __name__ == "__main__":

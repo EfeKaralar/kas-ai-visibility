@@ -6,9 +6,10 @@
 
 ## Scope and data
 - **Destination:** Kaş town + Çukurbağ peninsula, hand-drawn polygon (`config/kas_polygon.geojson`). Kalkan, Meis/Kastellorizo, inland villages = outside.
-- **Place list:** DataForSEO Google Maps, keywords "hotel"/"otel" over a grid. All returned accommodation types kept and analysed.
-- **DataForSEO spend:** stay inside the $1 new-account trial credit (the minimum top-up is $50). Priority queue (~$0.0012/search, ~1 min), DataForSEO-specific cap $0.90, account balance checked before each batch. Estimated total ~$0.70 including lookups and the stretch goal. The live-query box makes no DataForSEO calls. Fallback if the credit runs out: Serper's free 2,500 searches for name lookups.
-- **Unmatched recommendations:** one Maps lookup per unique name → outside / not captured in Step 1 / unverifiable.
+- **Place list:** Google Maps via Serper.dev, keywords "hotel"/"otel" over a grid, paging until a page adds nothing new. All returned accommodation types kept and analysed.
+- **Google Maps data provider:** Serper.dev on its free 2,500 signup credits (no card). DataForSEO was dropped because account activation requires a $50 payment. Serper usage is capped at 2,000 credits, tracked in the budget ledger; the rest is reserved for name lookups.
+- **Unmatched recommendations:** one Serper Maps lookup per unique name → outside / not captured in Step 1 / unverifiable.
+- **Stretch goal data source:** open. Serper does not return hotel amenities; candidates are SerpApi's free 250 searches/month (Google Hotels property details) or Google Places API. Decide when the stretch goal starts.
 
 ## Prompts
 - 8 personas, ~10 attributes (list decided together before Step 2), 20 base prompts × TR/EN/DE/RU = 80 prompts. Same intent per language, written naturally. Every prompt names Kaş.

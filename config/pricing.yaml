@@ -1,3 +1,2 @@
 # Estimated unit prices (USD). Verify against provider pricing pages before the main run.
-dataforseo:
-  maps_priority_per_call: 0.0012       # Google Maps SERP, priority queue (~1 min), per 100 results
+# Serper (Google Maps data) is used within its free signup credits and tracked in credits, not USD.

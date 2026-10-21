@@ -4,16 +4,15 @@ destination:
   polygon_file: config/kas_polygon.geojson
 
 place_collection:
-  provider: dataforseo
   keywords: ["hotel", "otel"]          # agreed: hotel searches only, all returned types kept
-  language_code: "en"
   grid_spacing_km: 0.8                 # grid points over the polygon's bounding box
-  zoom: "16z"
-  depth: 100                           # results per call (DataForSEO bills per 100)
+  max_pages: 3                         # stop earlier when a page adds no new places
 
-dataforseo:
-  credit_cap_usd: 0.90                 # stay inside the $1 trial credit; no $50 top-up planned
-  tasks_per_post: 100                  # API maximum per task_post request
+serper:
+  zoom: "16z"
+  language: "en"
+  credits_per_maps_call: 3             # assumed until the first response reports actual credits
+  credit_cap: 2000                     # of the 2,500 free signup credits; leaves room for name lookups
 
 budget:
   warn_usd: 30
