@@ -1,0 +1,112 @@
+# Personas, trip context and attributes for prompt generation (approved 2026-10-21).
+# Trip context is fixed per persona so attributes and context always match; the LLM only
+# writes the wording. Budgets are per room per night, sourced from 2026 aggregator listings
+# (see docs/plan.md); {budget} is rendered in € or TL at eur_try_rate.
+
+eur_try_rate: 56.3        # 13 Sep 2026 (LongForecast). Change only before the main engine run.
+
+budget_bands_eur:
+  low: 70                 # pensions and simple hotels, ~€35-75
+  mid: 150                # mid-range and boutique, ~€100-170
+  high: 300               # upscale seafront, ~€250-350
+
+attributes:
+  sea_view:          {label: "sea view",                                  listing_checkable: true}
+  sea_access:        {label: "direct sea access or swimming platform",    listing_checkable: true}
+  pool:              {label: "swimming pool",                             listing_checkable: true}
+  adults_only:       {label: "adults-only",                               listing_checkable: true}
+  pet_friendly:      {label: "pet-friendly (allows dogs)",                listing_checkable: true}
+  parking:           {label: "on-site parking",                           listing_checkable: true}
+  walk_to_old_town:  {label: "walking distance to the old town and harbour", listing_checkable: true}   # checked by distance
+  kitchen:           {label: "kitchen or self-catering",                  listing_checkable: true}
+  accessible:        {label: "few stairs / easy access",                  listing_checkable: true}
+  quiet:             {label: "quiet location",                            listing_checkable: false}
+  wifi_workspace:    {label: "reliable Wi-Fi and a place to work",        listing_checkable: false}
+
+# Each persona's prompts list the attributes requested in that prompt (1-3, all from the
+# persona's own needs). Every attribute appears in >= 4 prompts, except the persona-specific
+# pet_friendly, accessible and wifi_workspace (3 each).
+personas:
+  couple_quiet:
+    description: "a couple looking for a calm, romantic stay"
+    party: "2 adults"
+    month: September
+    nights: 5
+    budget_band: mid
+    prompts:
+      - [sea_view, quiet, adults_only]
+      - [quiet, sea_access, adults_only]
+
+  family_kids:
+    description: "a family with two children"
+    party: "2 adults and 2 children aged 6 and 9"
+    month: July
+    nights: 7
+    budget_band: mid
+    prompts:
+      - [pool, parking]
+      - [sea_access, kitchen]
+      - [pool, kitchen]
+
+  diver:
+    description: "a couple coming to Kaş to scuba dive every day"
+    party: "2 adults"
+    month: September
+    nights: 6
+    budget_band: low
+    prompts:
+      - [walk_to_old_town, kitchen]
+      - [parking]
+
+  remote_worker:
+    description: "a remote worker staying several weeks"
+    party: "1 adult"
+    month: October
+    nights: 21
+    budget_band: low
+    prompts:
+      - [wifi_workspace, quiet]
+      - [wifi_workspace, kitchen]
+      - [wifi_workspace, walk_to_old_town]
+
+  older_couple:
+    description: "a retired couple who find steep steps and hills difficult"
+    party: "2 adults in their late 60s"
+    month: May
+    nights: 6
+    budget_band: mid
+    prompts:
+      - [accessible, sea_view]
+      - [accessible, walk_to_old_town]
+      - [accessible, quiet]
+
+  pet_owner:
+    description: "a couple travelling with their dog"
+    party: "2 adults and a medium-sized dog"
+    month: September
+    nights: 5
+    budget_band: mid
+    prompts:
+      - [pet_friendly, parking]
+      - [pet_friendly, sea_access]
+      - [pet_friendly, quiet]
+
+  honeymooners:
+    description: "a honeymooning couple wanting something special"
+    party: "2 adults"
+    month: June
+    nights: 5
+    budget_band: high
+    prompts:
+      - [adults_only, sea_view, pool]
+      - [adults_only, sea_access]
+
+  road_trippers:
+    description: "a couple on a Lycian coast road trip stopping in Kaş"
+    party: "2 adults travelling by car"
+    month: May
+    nights: 2
+    budget_band: mid
+    prompts:
+      - [parking, walk_to_old_town]
+      - [sea_view, pool, parking]
