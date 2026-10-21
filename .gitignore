@@ -1,5 +1,9 @@
 .env
-data/
+data/*
+# Approved prompts are the experiment's input and cannot be regenerated identically: track them.
+!data/review/
+data/review/*
+!data/review/prompts_review.md
 .venv/
 __pycache__/
 *.pyc
