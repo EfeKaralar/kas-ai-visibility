@@ -7,6 +7,36 @@ place_collection:
   keywords: ["hotel", "otel", "pansiyon", "apart"]   # pansiyon/apart added after OSM cross-check showed missing small properties
   grid_spacing_km: 0.8                 # grid points over the polygon's bounding box
   max_pages: 3                         # stop earlier when a page adds no new places
+  # A place is accommodation if any of its Google categories is listed here. Rental agencies
+  # that manage many properties, restaurants, bars, beaches and attractions are not.
+  accommodation_categories:
+    - Hotel
+    - Resort hotel
+    - Extended stay hotel
+    - Love hotel                       # Google mislabels adults-only hotels this way
+    - Motel
+    - Hostel
+    - Lodging
+    - Indoor lodging
+    - Lodge
+    - Guest house
+    - Pension office
+    - Boarding house
+    - Bed & breakfast
+    - Apartment
+    - Apartment building               # small "apart" rentals are often filed under this
+    - Furnished apartment building
+    - Apartment rental agency          # in Kaş these are single apart properties
+    - Serviced apartment
+    - Serviced accommodation
+    - Self-catering accommodation
+    - Holiday apartment
+    - Holiday apartment rental
+    - Holiday home
+    - Vacation Rental
+    - House
+    - Villa
+    - Campground
 
 serper:
   zoom: "16z"

@@ -124,6 +124,9 @@ def main():
               f"{client.credits_used()} credits used")
 
     places = deduplicate(pd.DataFrame(rows))
+    accommodation = set(config["accommodation_categories"])
+    places["is_accommodation"] = [bool(accommodation & {category, *categories})
+                                  for category, categories in zip(places.category, places.categories)]
     places["in_destination"] = [polygon.contains(Point(lon, lat)) for lat, lon in zip(places.lat, places.lon)]
     places["km_from_center"] = [round(km_from_center(lat, lon), 2) for lat, lon in zip(places.lat, places.lon)]
     places["place_uid"] = ["P" + str(number).zfill(4) for number in range(len(places))]
@@ -133,7 +136,11 @@ def main():
     pd.DataFrame(saturation).to_csv(PROCESSED / "place_search_saturation.csv", index=False)
 
     inside = places[places.in_destination]
-    print(f"\nUnique places: {len(places)} (inside destination: {len(inside)})")
+    excluded = inside[~inside.is_accommodation]
+    print(f"\nUnique places: {len(places)} (inside destination: {len(inside)}, "
+          f"of which accommodation: {len(inside) - len(excluded)})")
+    print("Not accommodation (kept in the list, excluded from metrics):")
+    print(excluded[["name", "category"]].to_string(index=False))
     print("Categories inside destination:")
     print(inside["category"].value_counts(dropna=False).to_string())
     print(f"With website: {inside.website.notna().sum()}, with rating: {inside.rating.notna().sum()}")
