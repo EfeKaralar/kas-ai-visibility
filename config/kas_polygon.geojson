@@ -6,7 +6,7 @@
       "properties": {
         "name": "Kaş town + Çukurbağ peninsula + Limanağzı",
         "status": "draft - awaiting approval",
-        "note": "Hand-drawn. Principle: include what tourists consider Kaş. Excludes Kalkan, Gökseki (north shore of the bay), inland villages (Çukurbağ village, Pınarbaşı), the Bayındır coast and Meis/Kastellorizo."
+        "note": "Hand-drawn. Principle: include what tourists consider Kaş. Excludes Kalkan, Gökseki (north shore of the bay), inland villages (Çukurbağ village, Pınarbaşı), the Bayındır coast and Meis/Kastellorizo. East and marina edges widened to include near-edge places tourists treat as Kaş (Doria, Can Mocamp, Stone Hill and neighbours)."
       },
       "geometry": {
         "type": "Polygon",
@@ -15,20 +15,21 @@
           [29.568, 36.192],
           [29.585, 36.1985],
           [29.605, 36.2015],
-          [29.610, 36.2055],
+          [29.61, 36.2055],
           [29.6185, 36.2055],
-          [29.620, 36.2045],
-          [29.630, 36.2095],
+          [29.62, 36.2055],
+          [29.6225, 36.208],
+          [29.63, 36.2095],
           [29.648, 36.2115],
-          [29.664, 36.2075],
-          [29.670, 36.199],
-          [29.664, 36.190],
-          [29.656, 36.179],
+          [29.6675, 36.2068],
+          [29.67, 36.199],
+          [29.664, 36.19],
+          [29.6597, 36.18],
           [29.652, 36.1705],
-          [29.640, 36.1705],
-          [29.635, 36.180],
-          [29.620, 36.183],
-          [29.595, 36.180],
+          [29.64, 36.1705],
+          [29.635, 36.18],
+          [29.62, 36.183],
+          [29.595, 36.18],
           [29.568, 36.184]
         ]]
       }

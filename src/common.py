@@ -49,6 +49,27 @@ def in_destination(lat: float, lon: float, polygon=None) -> bool:
     return polygon.contains(Point(lon, lat))
 
 
+def destination_places():
+    """The analysis population: accommodation inside the destination polygon.
+
+    Every metric must take its denominator from here, never filter places.parquet itself;
+    out-of-destination places stay in the file only so AI mentions of them can be matched.
+    """
+    import pandas as pd
+
+    places = pd.read_parquet(PROCESSED / "places.parquet")
+    return places[places["in_destination"] & places["is_accommodation"]].reset_index(drop=True)
+
+
+def check_population(place_uids, context: str) -> None:
+    """Fail loudly if a metric's place set differs from destination_places()."""
+    expected = set(destination_places()["place_uid"])
+    actual = set(place_uids)
+    if actual != expected:
+        raise AssertionError(f"{context}: {len(actual - expected)} places outside the destination population, "
+                             f"{len(expected - actual)} destination places missing.")
+
+
 def haversine_km(lat_a, lon_a, lat_b, lon_b) -> float:
     earth_radius_km = 6371.0
     phi_a, phi_b = math.radians(lat_a), math.radians(lat_b)

@@ -1,7 +1,8 @@
 """Render the destination polygon over a map for approval.
 
-Overlays OpenStreetMap accommodation (free, ODbL) and, once places have been
-collected, the Google places. Output: data/review/polygon_map.html
+Overlays OpenStreetMap accommodation (free, ODbL; green inside, red outside) and, once
+places have been collected, the Google places (purple if counted in the analysis, grey if
+outside the polygon or not accommodation). Output: data/review/polygon_map.html
 
     uv run python -m src.review_polygon
 """
@@ -58,8 +59,11 @@ def main():
     places_file = PROCESSED / "places.parquet"
     if places_file.exists():
         for place in pd.read_parquet(places_file).itertuples():
-            folium.CircleMarker([place.lat, place.lon], radius=3, weight=1, color="#7c3aed", fill=True,
-                                tooltip=f"Google {place.category}: {place.name}").add_to(world_map)
+            counted = in_destination(place.lat, place.lon, polygon) and place.is_accommodation
+            folium.CircleMarker([place.lat, place.lon], radius=3, weight=1,
+                                color="#7c3aed" if counted else "#9ca3af", fill=True,
+                                tooltip=f"Google {place.category}: {place.name}"
+                                        + ("" if counted else " (not counted)")).add_to(world_map)
 
     output = ROOT / "data" / "review" / "polygon_map.html"
     output.parent.mkdir(parents=True, exist_ok=True)
