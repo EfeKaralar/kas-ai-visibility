@@ -80,15 +80,28 @@ def extract_anthropic(message: dict) -> dict:
     return {"text": text, "citations": citations, "searches": searches, "consulted": consulted}
 
 
+REDIRECTS = CACHE / "gemini_redirects"
+redirect_lock = threading.Lock()
+
+
 def resolve_redirect(uri: str) -> str | None:
-    """Gemini cites vertexaisearch redirect links that expire; resolve them immediately."""
+    """Gemini cites vertexaisearch redirect links that expire; resolve each one once and keep
+    the result on disk, so rebuilding tables later never depends on links still working."""
+    key = request_hash({"redirect": uri})
+    if (stored := cache_get(REDIRECTS, key)) is not None:
+        return stored["location"]
+    location = None
     for _ in range(3):
         try:
             response = requests.head(uri, allow_redirects=False, timeout=20)
-            return response.headers.get("Location")
+            location = response.headers.get("Location")
+            break
         except requests.RequestException:
             time.sleep(2)
-    return None
+    if location:  # failures are not stored, so a later run can retry while the link still works
+        with redirect_lock:
+            cache_put(REDIRECTS, key, {"uri": uri, "location": location, "resolved_at": now_iso()})
+    return location
 
 
 def extract_gemini(message: dict) -> dict:
