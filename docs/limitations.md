@@ -18,5 +18,9 @@ Kept from day 1 for the presentation and later analysis.
 - Google categories are owner-chosen and inconsistent (many pensions are listed as hotels).
 - Destination boundary is a hand-drawn polygon (Kaş town + Çukurbağ peninsula); coverage is sensitive to it, so distance from center is stored for every place.
 
+## Unmatched places
+- **Closed places are invisible to the automatic lookup.** Serper's Google Maps results omit permanently closed places entirely (no result and no status field), although Google itself shows them as "Permanently closed". Automatic categories "osm_only" and "unverifiable" can therefore contain closed places. Example: Hotel Cachet, recommended in 8 of 48 pilot answers, is permanently closed per Google Maps and Tripadvisor (checked by hand on 2026-10-22).
+- Hand-verified facts are kept in `config/manual_verifications.yaml` (with sources and date) and override the lookup. Only the most-mentioned osm_only/unverifiable names are checked by hand, so the remaining ones may still include closures.
+
 ## Scope
 - Kaş is almost entirely independent properties; results may not carry over to chain-heavy destinations (Bodrum, Antalya city).

@@ -1,0 +1,13 @@
+# Facts about named places verified by hand. Applied by src/classify_unmatched.py before the
+# automatic lookup, because Serper's Google Maps results omit permanently closed places
+# entirely (no result, no status field), so closures cannot be detected automatically.
+#
+# Keys are distinctive name parts as produced by match_mentions.core_name (lowercase,
+# transliterated, generic words like "hotel" removed).
+
+cachet:
+  name: Hotel Cachet
+  status: permanently_closed
+  sources: ["Google Maps: Permanently closed", "Tripadvisor: Permanently closed"]
+  verified_by: project owner
+  verified_on: 2026-10-22

@@ -7,6 +7,8 @@ or, failing that, when the helper LLM judges one of the top results to be the sa
 - found, accommodation, inside the polygon  -> "not_in_place_list" (real, our search missed it)
 - found, accommodation, outside the polygon -> "outside_destination"
 - found but already in our list             -> "in_list_missed_by_matcher" (matcher error)
+- verified by hand in config/manual_verifications.yaml -> its recorded status, e.g. "permanently_closed"
+  (applied first: Serper omits permanently closed places, so closures are invisible to the lookup)
 - not on Google, but in OpenStreetMap        -> "osm_only" (exists in OSM; possibly closed or unlisted)
 - no confident match anywhere                -> "unverifiable" (possibly closed or non-existent)
 
@@ -25,7 +27,7 @@ from pydantic import BaseModel, Field
 from rapidfuzz import fuzz
 
 from src.collect_places import parse_places
-from src.common import PROCESSED, SETTINGS, Budget, in_destination, km_from_center
+from src.common import PROCESSED, SETTINGS, Budget, in_destination, km_from_center, load_yaml
 from src.match_mentions import core_name
 from src.llm import structured
 from src.review_polygon import fetch_osm
@@ -94,6 +96,7 @@ def main():
     places = pd.read_parquet(PROCESSED / "places.parquet")
     known_cids = dict(zip(places.cid, places.place_uid))
     osm_places = [place for place in fetch_osm() if core_name(place["name"])]
+    verified = load_yaml("manual_verifications.yaml") or {}
 
     mentions = pd.read_parquet(PROCESSED / f"mentions{suffix}.parquet")
     unmatched = mentions[mentions.place_uid.isna()].assign(core=lambda df: df.name_in_answer.map(core_name))
@@ -105,6 +108,13 @@ def main():
     rows = []
     for core, group in groups:
         name = group.name_in_answer.value_counts().index[0]   # most common spelling
+        if core in verified:
+            facts = verified[core]
+            rows.append({"core_name": core, "name": name, "spellings": sorted(set(group.name_in_answer)),
+                         "mentions": len(group), "recommended": int((group.label == "recommended").sum()),
+                         "answers": group.answer_id.nunique(), "found_by": "manual", "found_name": facts["name"],
+                         "category": facts["status"], "evidence": "; ".join(facts["sources"])})
+            continue
         found, score, method = look_up(name, client, budget)
         row = {"core_name": core, "name": name, "spellings": sorted(set(group.name_in_answer)),
                "mentions": len(group), "recommended": int((group.label == "recommended").sum()),
@@ -135,6 +145,11 @@ def main():
     table = pd.DataFrame(rows)
     table.to_parquet(PROCESSED / f"unmatched_places{suffix}.parquet", index=False)
     print(table.groupby("category").agg(names=("name", "size"), mentions=("mentions", "sum")).to_string())
+    to_check = table[table.category.isin(["osm_only", "unverifiable"])].sort_values("mentions", ascending=False)
+    if len(to_check):
+        print("\nCheck these by hand before reporting (closures are invisible to the lookup); record results in "
+              "config/manual_verifications.yaml:")
+        print(to_check[["name", "category", "mentions"]].head(10).to_string(index=False))
     print(f"\nSerper credits used: {client.credits_used()}")
 
 
