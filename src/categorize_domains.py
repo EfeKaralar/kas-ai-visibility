@@ -50,6 +50,26 @@ class DomainCategories(BaseModel):
     domains: list[DomainCategory]
 
 
+def hand_entries() -> dict:
+    return (load_yaml("domains.yaml") or {}).get("categories") or {}
+
+
+def hand_categories() -> dict[str, str]:
+    """domain -> category from config/domains.yaml (entries are a category or a mapping)."""
+    return {domain: entry["category"] if isinstance(entry, dict) else entry
+            for domain, entry in hand_entries().items()}
+
+
+def own_sites(places: pd.DataFrame) -> dict[str, str]:
+    """domain -> place_uid: websites from the place list plus hand-mapped own websites."""
+    sites = own_site_domains(places)
+    cid_to_uid = dict(zip(places.cid, places.place_uid))
+    for domain, entry in hand_entries().items():
+        if isinstance(entry, dict) and str(entry.get("place_cid")) in cid_to_uid:
+            sites[domain] = cid_to_uid[str(entry["place_cid"])]
+    return sites
+
+
 def llm_categories(domains: list[str], budget: Budget) -> dict[str, str]:
     result = {}
     for start in range(0, len(domains), LLM_BATCH):
@@ -72,7 +92,7 @@ def main():
     table["cumulative_share"] = table.citations.cumsum() / table.citations.sum()
     table["in_head"] = table.cumulative_share.shift(fill_value=0) < HAND_COVERAGE
 
-    hand = (load_yaml("domains.yaml") or {}).get("categories") or {}
+    hand = hand_categories()
     place_sites = own_site_domains(pd.read_parquet(PROCESSED / "places.parquet"))
     table["category"] = table.domain.map(lambda d: "hotel_website" if d in place_sites else hand.get(d))
     table["source"] = table.domain.map(lambda d: "place_list" if d in place_sites else ("hand" if d in hand else None))

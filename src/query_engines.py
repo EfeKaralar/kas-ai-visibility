@@ -67,12 +67,17 @@ def extract_openai(message: dict) -> dict:
 
 def extract_anthropic(message: dict) -> dict:
     text, citations = "", []
+    previous = (0, 0)
     for block in text_blocks(message):
         start = len(text)
         text += block["text"]
+        # a cited block can be empty; its citations then support the text just before it
+        span = (start, len(text)) if block["text"] else previous
         for cite in block.get("citations") or []:
             citations.append({"url": clean_url(cite["url"]), "title": cite.get("title"),
-                              "start": start, "end": len(text), "cited_text": cite.get("cited_text")})
+                              "start": span[0], "end": span[1], "cited_text": cite.get("cited_text")})
+        if block["text"]:
+            previous = (start, len(text))
     results = [b for b in message["content"] if isinstance(b, dict) and b.get("type") == "web_search_tool_result"]
     consulted = [r["url"] for b in results if isinstance(b.get("content"), list) for r in b["content"] if r.get("url")]
     usage = message["response_metadata"].get("usage") or {}

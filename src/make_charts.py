@@ -33,7 +33,7 @@ TARGET_NAMES = {"listed_outside_destination": "Outside Kaş", "outside_destinati
                 "not_in_place_list": "In Kaş, not in our list", "permanently_closed": "Permanently closed",
                 "osm_only": "Only in OpenStreetMap", "unverifiable": "Unverifiable",
                 "not_accommodation": "Not accommodation", "listed_not_accommodation": "Not accommodation",
-                "in_list_missed_by_matcher": "Matcher miss", "unclassified": "Unclassified",
+                "in_list_missed_by_matcher": "Matcher miss", "unclassified": "Generic name only (e.g. \"Kas Otel\")",
                 "not_looked_up": "Not looked up (named once)"}
 
 plt.rcParams.update({
@@ -59,8 +59,9 @@ def finish(fig, path: Path, note: str):
 def coverage_chart(metrics: Path, out: Path):
     table = pd.read_parquet(metrics / "coverage.parquet")
     rows = [("All engines", "#52514e", table[table.scope == "overall"].iloc[0])]
-    rows += [(ENGINE_NAMES[engine], ENGINE_COLORS[engine], row)
-             for engine, row in table[table.scope == "engine"].set_index("group").iterrows()]
+    by_engine = table[table.scope == "engine"].set_index("group")
+    rows += [(ENGINE_NAMES[engine], ENGINE_COLORS[engine], by_engine.loc[engine])
+             for engine in ENGINE_NAMES if engine in by_engine.index]
     rows = rows[::-1]                                     # barh draws bottom-up
     fig, ax = plt.subplots(figsize=(8, 3.6))
     bars = ax.barh([r[0] for r in rows], [r[2].coverage for r in rows], color=[r[1] for r in rows], height=0.55)
@@ -105,9 +106,9 @@ def popularity_chart(metrics: Path, out: Path):
                label="Never recommended", linewidths=0)
     ax.scatter(some.review_count.clip(lower=1), some.recommendations, s=22, color="#2a78d6",
                edgecolors=SURFACE, linewidths=0.8, label="Recommended")
-    for row in some.nlargest(6, "recommendations").itertuples():
+    for row in some.nlargest(3, "recommendations").itertuples():   # the message is the pattern, not names
         ax.annotate(row.name, (max(row.review_count, 1), row.recommendations), textcoords="offset points",
-                    xytext=(5, 3), fontsize=8.5, color=INK_2)
+                    xytext=(6, 0), fontsize=8.5, color=INK_2, va="center")
     ax.set_xscale("log")
     ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda value, _: f"{value:,.0f}"))
     ax.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(integer=True))
@@ -183,7 +184,7 @@ def targets_chart(metrics: Path, out: Path):
     fig, ax = plt.subplots(figsize=(8, 4))
     bars = ax.barh(table.label, table.recommendations, color="#eb6834", height=0.55)
     for bar, row in zip(bars, table.itertuples()):
-        ax.text(bar.get_width() + 0.5, bar.get_y() + bar.get_height() / 2,
+        ax.text(bar.get_width() + table.recommendations.max() * 0.015, bar.get_y() + bar.get_height() / 2,
                 f"{row.recommendations}  ({row.share:.1%} of all)" if row.share < 0.01
                 else f"{row.recommendations}  ({row.share:.0%} of all)", va="center", fontsize=9.5, color=INK_2)
     ax.set_xlim(0, table.recommendations.max() * 1.35 if len(table) else 1)

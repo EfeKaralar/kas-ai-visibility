@@ -14,7 +14,8 @@ import itertools
 import pandas as pd
 
 from src.common import PROCESSED, check_population, destination_places
-from src.match_mentions import core_name, own_site_domains
+from src.categorize_domains import own_sites
+from src.match_mentions import core_name
 
 TOP_N = 5
 
@@ -187,7 +188,7 @@ def segments(answers: pd.DataFrame, recs: pd.DataFrame) -> pd.DataFrame:
 def citation_links(data: dict, recs: pd.DataFrame) -> pd.DataFrame:
     """One row per (recommendation, supporting domain), categorised per docs/metrics.md."""
     domains = data["domains"].set_index("domain").category
-    site_owner = own_site_domains(data["places"])
+    site_owner = own_sites(data["places"])
     bounds = segments(data["answers"], recs).set_index("rec_index")
     cites = data["citations"]
     rows = []
@@ -272,6 +273,18 @@ def hypothesis(links: pd.DataFrame, destination: pd.DataFrame) -> tuple[pd.DataF
     return table, verdict
 
 
+def robustness(links: pd.DataFrame, data: dict) -> tuple[pd.DataFrame, str]:
+    """docs/metrics.md robustness check: drop citations of LLM-categorised domains and recompute
+    the source shares and the hypothesis. Own-website links never depend on the LLM."""
+    llm_domains = set(data["domains"][data["domains"].source == "llm"].domain)
+    kept = links[~links.domain.isin(llm_domains)]
+    table, verdict = hypothesis(kept, data["destination"])
+    shares = sources_per_recommendation(kept).query("scope == 'overall' and category != 'no_source'")
+    table = table.assign(verdict=verdict, dropped_links=int(links.domain.isin(llm_domains).sum()))
+    return pd.concat([table.assign(table_kind="hypothesis"),
+                      shares.assign(table_kind="sources_overall")], ignore_index=True), verdict
+
+
 # --- main ----------------------------------------------------------------------
 
 def main():
@@ -287,6 +300,7 @@ def main():
     summary, breakdown = per_place(recs, data["destination"])
     links = citation_links(data, recs)
     hypothesis_table, verdict = hypothesis(links, data["destination"])
+    robust_table, robust_verdict = robustness(links, data)
     tables = {
         "place_summary": summary, "place_breakdown": breakdown,
         "coverage": coverage(recs, data["destination"]), "concentration": concentration(recs),
@@ -295,6 +309,7 @@ def main():
         "citation_links": links, "sources_per_answer": sources_per_answer(data),
         "sources_per_recommendation": sources_per_recommendation(links),
         "hypothesis": hypothesis_table.assign(verdict=verdict),
+        "robustness_without_llm_domains": robust_table,
     }
     folder = PROCESSED / f"metrics{suffix}"
     folder.mkdir(parents=True, exist_ok=True)
@@ -302,7 +317,7 @@ def main():
         table.to_parquet(folder / f"{name}.parquet", index=False)
         print(f"  {name}: {len(table)} rows")
     if not args.pilot:
-        print(f"\nHypothesis verdict: {verdict}")
+        print(f"\nHypothesis verdict: {verdict} (without LLM-categorised domains: {robust_verdict})")
 
 
 if __name__ == "__main__":

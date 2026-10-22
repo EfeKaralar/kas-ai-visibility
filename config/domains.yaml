@@ -1,7 +1,88 @@
 # Hand-made categories for cited domains (docs/metrics.md, "Domain categories").
-# Filled AFTER the full run: the most-cited domains that together account for 80% of all
-# citations are categorised here by hand; the rest are categorised by the helper LLM.
-# Categories: ota, review_site, hotel_website, map, blog_media, other
-# (websites of places in the place list are recognised automatically as hotel_website).
+# Filled after the full run: the 60 most-cited domains that together account for 80% of all
+# citations (excluding websites of listed places, recognised automatically). The rest are
+# categorised by the helper LLM. Categories: ota, review_site, hotel_website, map, blog_media, other.
+#
+# Judgement calls (marked "# judgement"):
+# - Hotel directories and affiliate listing sites that send travelers on to book (e.g.
+#   allkashotels.com, kas-hotels.co, planetofhotels.com) count as "ota": they are third-party
+#   booking intermediaries, which is what the hypothesis contrasts with a hotel's own website.
+# - Google Hotels pages (google.com.tr/travel/hotels) count as "ota" (hotel metasearch, fed by
+#   booking partners); Yandex Maps pages count as "map".
+# - Editorial "best hotels" guides count as "blog_media" even when they carry booking links.
+#
+# hotel_website entries may name the place they belong to (place_cid, Google's stable id) when
+# Google lists a different website for it, so they count as that place's own website.
 
-categories: {}
+categories:
+  # OTAs, booking platforms and metasearch
+  booking.com: ota
+  hotels.com: ota
+  tr.hotels.com: ota
+  ie.hotels.com: ota
+  uk.hotels.com: ota
+  hoteles.com: ota
+  enuygun.com: ota
+  trivago.com: ota
+  trivago.com.tr: ota
+  ar.trivago.com: ota
+  cozycozy.com: ota
+  airbnb.com: ota
+  airbnb.com.tr: ota
+  agoda.com: ota
+  tatilbudur.com: ota
+  kayak.com: ota
+  ca.kayak.com: ota
+  otelz.com: ota
+  us.trip.com: ota
+  tr.trip.com: ota
+  tatilsepeti.com: ota
+  reserving.com: ota
+  expedia.co.uk: ota
+  obilet.com: ota
+  global.almosafer.com: ota
+  skyscanner.gg: ota
+  setur.com.tr: ota
+  travelocity.com: ota
+  hotelscombined.com: ota
+  jollytur.com: ota
+  turcia.directbooking.ro: ota
+  kasholidayrentals.com: ota            # local rental agency taking bookings
+  theturquoisecollection.com: ota       # judgement: curated boutique-hotel booking site
+  travelmyth.com: ota                   # judgement: hotel search/aggregator
+  bringfido.com: ota                    # judgement: pet-friendly hotel directory with booking
+  bringfido.co.uk: ota                  # judgement
+  hotelswithtoys.com: ota               # judgement: family-hotel directory
+  kas.dogfriendlyhotels.co: ota         # judgement: affiliate directory
+  hotels-antalya.net: ota               # judgement: affiliate directory
+  en.planetofhotels.com: ota            # judgement: affiliate directory
+  allkashotels.com: ota                 # judgement: affiliate directory
+  kas.aparthotelshq.com: ota            # judgement: affiliate directory
+  kas-hotels.co: ota                    # judgement: affiliate directory
+  boutiquesmallhotels.com: ota          # judgement: directory
+  google.com.tr: ota                    # judgement: Google Hotels pages (metasearch)
+
+  # Review sites
+  tripadvisor.com: review_site
+  holidaycheck.de: review_site
+
+  # Maps
+  yandex.com.tr: map                    # Yandex Maps pages
+
+  # Blogs, guides and media
+  hoponworld.com: blog_media
+  theturkiyeguide.com: blog_media
+  bizevdeyokuz.com: blog_media
+  nosincontournables.com: blog_media
+  wanderlog.com: blog_media
+  thehotelguru.com: blog_media          # judgement: editorial guide with booking links
+  herpassportlife.com: blog_media
+  ghostofkas.com: blog_media
+  antalyaexperiences.com: blog_media
+
+  # Own websites not recognised from the place list
+  duyguapartkas.com: {category: hotel_website, place_cid: "11327073153817047379"}   # Duygu Apart (Google lists nevaapart.com)
+  kas-diving.com: hotel_website         # dive centre that also rents apartments
+
+  # Other
+  instagram.com: other                  # social media

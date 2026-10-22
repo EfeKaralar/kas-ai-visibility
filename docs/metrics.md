@@ -66,3 +66,4 @@ The test is descriptive; it does not show that OTA content *causes* recommendati
 
 ## Change log
 - 2026-10-22: first version.
+- 2026-10-22 (after the full run): no definition changed. The citation-span sanity check found 14 zero-length spans in one Anthropic answer (citations on an empty text block); the extractor now gives such citations the span of the preceding text. This is an extraction bug fix, not a metric change. The robustness check runs as specified and gives the same verdict.
