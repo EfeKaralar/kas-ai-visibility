@@ -113,7 +113,8 @@ def main():
             rows.append({"core_name": core, "name": name, "spellings": sorted(set(group.name_in_answer)),
                          "mentions": len(group), "recommended": int((group.label == "recommended").sum()),
                          "answers": group.answer_id.nunique(), "found_by": "manual", "found_name": facts["name"],
-                         "category": facts["status"], "evidence": "; ".join(facts["sources"])})
+                         "category": facts["status"], "area": facts.get("area"),
+                         "evidence": "; ".join(facts["sources"])})
             continue
         found, score, method = look_up(name, client, budget)
         row = {"core_name": core, "name": name, "spellings": sorted(set(group.name_in_answer)),
@@ -145,7 +146,8 @@ def main():
     table = pd.DataFrame(rows)
     table.to_parquet(PROCESSED / f"unmatched_places{suffix}.parquet", index=False)
     print(table.groupby("category").agg(names=("name", "size"), mentions=("mentions", "sum")).to_string())
-    to_check = table[table.category.isin(["osm_only", "unverifiable"])].sort_values("mentions", ascending=False)
+    to_check = table[table.category.isin(["osm_only", "unverifiable"]) & (table.found_by != "manual")]
+    to_check = to_check.sort_values("mentions", ascending=False)
     if len(to_check):
         print("\nCheck these by hand before reporting (closures are invisible to the lookup); record results in "
               "config/manual_verifications.yaml:")

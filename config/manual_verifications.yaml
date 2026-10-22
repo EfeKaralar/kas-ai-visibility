@@ -23,3 +23,50 @@ cachet:
   sources: ["Google Maps: Permanently closed", "Tripadvisor: Permanently closed"]
   verified_by: project owner
   verified_on: 2026-10-22
+
+belinda:
+  name: Belinda Hotel
+  status: same_as
+  google_cid: "978673812029675671"         # Google Maps listing "Hotel Linda", Koza Sk. No:29
+  sources: ["Listed as 'Linda Hotel' on Google Maps (project owner)",
+            "OSM 'Hotel Belinda' is 21 m from the 'Hotel Linda' listing; 'linda beach hotel' is 213 m away"]
+  verified_by: project owner
+  verified_on: 2026-10-22
+
+eucalyptus:
+  name: Eucalyptus Pension
+  status: outside_destination
+  area: Gelemiş
+  sources: ["Located in Gelemiş (project owner)"]
+  verified_by: project owner
+  verified_on: 2026-10-22
+
+golden lighthouse:
+  name: Golden Lighthouse Hotel
+  status: outside_destination
+  area: Gelemiş
+  sources: ["Located in Gelemiş (project owner)"]
+  verified_by: project owner
+  verified_on: 2026-10-22
+
+patara caretta:
+  name: Patara Caretta Hotel
+  status: outside_destination
+  area: Patara
+  sources: ["Located in Patara (project owner)"]
+  verified_by: project owner
+  verified_on: 2026-10-22
+
+aquapark:
+  name: Aquapark Hotel
+  status: unverifiable
+  sources: ["Not found by the automatic lookup or by hand (project owner)"]
+  verified_by: project owner
+  verified_on: 2026-10-22
+
+yarimada studyolari:
+  name: Yarımada Butik Apart / Stüdyoları
+  status: unverifiable
+  sources: ["Nothing found in Kaş by the automatic lookup or by hand (project owner)"]
+  verified_by: project owner
+  verified_on: 2026-10-22
