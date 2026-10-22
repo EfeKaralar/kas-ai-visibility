@@ -4,6 +4,9 @@ data/*
 !data/review/
 data/review/*
 !data/review/prompts_review.md
+# Hand-check labels are human input: track them.
+!data/review/hand_check.csv
+!data/review/hand_check_answers.md
 .venv/
 __pycache__/
 *.pyc
