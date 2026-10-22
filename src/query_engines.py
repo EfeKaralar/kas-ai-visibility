@@ -60,7 +60,7 @@ def extract_openai(message: dict) -> dict:
         text += block["text"]
         offset = len(text)
     calls = [b for b in message["content"] if isinstance(b, dict) and b.get("type") == "web_search_call"]
-    consulted = [s["url"] for call in calls for s in (call.get("action") or {}).get("sources") or []]
+    consulted = [s["url"] for call in calls for s in (call.get("action") or {}).get("sources") or [] if s.get("url")]
     return {"text": text, "citations": citations, "searches": len(calls), "consulted": consulted}
 
 
@@ -73,7 +73,7 @@ def extract_anthropic(message: dict) -> dict:
             citations.append({"url": clean_url(cite["url"]), "title": cite.get("title"),
                               "start": start, "end": len(text), "cited_text": cite.get("cited_text")})
     results = [b for b in message["content"] if isinstance(b, dict) and b.get("type") == "web_search_tool_result"]
-    consulted = [r["url"] for b in results if isinstance(b.get("content"), list) for r in b["content"]]
+    consulted = [r["url"] for b in results if isinstance(b.get("content"), list) for r in b["content"] if r.get("url")]
     usage = message["response_metadata"].get("usage") or {}
     searches = (usage.get("server_tool_use") or {}).get("web_search_requests", 0)
     return {"text": text, "citations": citations, "searches": searches, "consulted": consulted}
@@ -120,6 +120,17 @@ EXTRACTORS = {"openai": extract_openai, "anthropic": extract_anthropic, "gemini"
 
 # --- cost ------------------------------------------------------------------
 
+def count_searches(engine: str, message: dict) -> int:
+    """Billable searches, read straight from the raw message (independent of extraction)."""
+    if engine == "openai":
+        return sum(1 for b in message["content"] if isinstance(b, dict) and b.get("type") == "web_search_call")
+    if engine == "anthropic":
+        usage = message["response_metadata"].get("usage") or {}
+        return (usage.get("server_tool_use") or {}).get("web_search_requests", 0)
+    grounding = message["response_metadata"].get("grounding_metadata") or {}
+    return len(grounding.get("web_search_queries") or [])
+
+
 def gemini_free_searches_left(budget: Budget, model: str) -> int:
     month = datetime.now(timezone.utc).strftime("%Y-%m")
     used = 0
@@ -154,7 +165,7 @@ def query(request: dict, budget: Budget, live: bool = False) -> dict:
     folder = CACHE / ("live" if live else request["engine"])
     key = request_hash(request)
     if cached := cache_get(folder, key):
-        return cached
+        return with_extraction(cached) if "message" in cached else cached
     with ledger_lock:
         budget.check(COST_CEILING_PER_CALL)
     config = SETTINGS["engine_queries"]
@@ -172,17 +183,27 @@ def query(request: dict, budget: Budget, live: bool = False) -> dict:
     if message is None:
         return {"request": request, "key": key, "error": error, "fetched_at": now_iso()}
 
-    extracted = EXTRACTORS[request["engine"]](message)
-    usage = message.get("usage_metadata") or {}
-    with ledger_lock:
-        cost = answer_cost(request["model"], usage, extracted["searches"], budget)
-        budget.record(STAGE, request["engine"], cost, f"{request['prompt_id']} r{request['repeat']}",
-                      model=request["model"], searches=extracted["searches"])
+    # The call is paid for: cache the raw response and record its cost before any parsing,
+    # so a parsing bug can never cause the same request to be paid for twice.
     record = {"request": request, "key": key, "fetched_at": now_iso(), "seconds": round(time.time() - started, 1),
               "model_id": message["response_metadata"].get("model_name"),
-              "response_id": message.get("id"), "usage": usage, "cost_usd": cost,
-              "extracted": extracted, "message": message}
+              "response_id": message.get("id"), "usage": message.get("usage_metadata") or {}, "message": message}
     cache_put(folder, key, record)
+    with ledger_lock:
+        searches = count_searches(request["engine"], message)
+        record["cost_usd"] = answer_cost(request["model"], record["usage"], searches, budget)
+        budget.record(STAGE, request["engine"], record["cost_usd"], f"{request['prompt_id']} r{request['repeat']}",
+                      model=request["model"], searches=searches)
+    cache_put(folder, key, record)
+    return with_extraction(record)
+
+
+def with_extraction(record: dict) -> dict:
+    """Extraction is recomputed from the cached raw message, so extractor fixes need no new calls."""
+    try:
+        record["extracted"] = EXTRACTORS[record["request"]["engine"]](record["message"])
+    except Exception as exc:
+        record["extraction_error"] = repr(exc)[:500]
     return record
 
 
@@ -195,7 +216,7 @@ def to_tables(records: list[dict]) -> tuple[pd.DataFrame, pd.DataFrame]:
         answers.append({"answer_id": answer_id, "prompt_id": request["prompt_id"], "engine": request["engine"],
                         "repeat": request["repeat"], "model": request["model"], "model_id": record.get("model_id"),
                         "fetched_at": record["fetched_at"], "seconds": record.get("seconds"),
-                        "error": record.get("error"), "text": extracted.get("text"),
+                        "error": record.get("error") or record.get("extraction_error"), "text": extracted.get("text"),
                         "searches": extracted.get("searches"), "n_citations": len(extracted.get("citations", [])),
                         "n_consulted": len(extracted.get("consulted", [])), "cost_usd": record.get("cost_usd")})
         for order, cite in enumerate(extracted.get("citations", [])):
@@ -225,14 +246,17 @@ def main():
     records = []
     with ThreadPoolExecutor(max_workers=config["workers"]) as pool:
         futures = [pool.submit(query, request, budget) for request in requests_]
-        try:
-            for done, future in enumerate(as_completed(futures), start=1):
+        for done, future in enumerate(as_completed(futures), start=1):
+            try:
                 records.append(future.result())
-                if done % 10 == 0 or done == len(futures):
-                    print(f"  {done}/{len(futures)} done, spent ${budget.spent():.2f}")
-        except BudgetExceeded as stop:
-            print(f"STOPPED: {stop}")
-            pool.shutdown(cancel_futures=True)
+            except BudgetExceeded as stop:
+                print(f"STOPPED: {stop}")
+                pool.shutdown(cancel_futures=True)
+                break
+            except Exception as exc:  # one failed call must not stop the run
+                print(f"  call failed: {exc!r}"[:300])
+            if done % 10 == 0 or done == len(futures):
+                print(f"  {done}/{len(futures)} done, spent ${budget.spent():.2f}")
 
     answers, citations = to_tables(records)
     suffix = "_pilot" if args.pilot else ""
