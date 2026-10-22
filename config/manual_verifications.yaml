@@ -5,6 +5,18 @@
 # Keys are distinctive name parts as produced by match_mentions.core_name (lowercase,
 # transliterated, generic words like "hotel" removed).
 
+# status "same_as": the name refers to a place already in the list (matched by Google's stable cid).
+# Applied by src/match_mentions.py to mentions the LLM left unmatched.
+
+sea garden:
+  name: Sea Garden Kaş Hotel
+  status: same_as
+  google_cid: "17317803485245349292"      # Google Maps listing "Hideaway Peninsula" (website seagardenkas.com)
+  sources: ["Google Maps 'Hideaway Peninsula' reservation link goes to Sea Garden Kaş on etstur",
+            "Google Maps listing website is seagardenkas.com"]
+  verified_by: project owner
+  verified_on: 2026-10-22
+
 cachet:
   name: Hotel Cachet
   status: permanently_closed
