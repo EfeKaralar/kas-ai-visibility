@@ -15,7 +15,6 @@ cp .env.example .env   # fill in API keys
 |---|---|---|---|
 | 0 | Render the destination polygon with OSM accommodation for review | `uv run python -m src.review_polygon` | `data/review/polygon_map.html` |
 | 1 | Collect accommodation from Google Maps (Serper.dev, within its free credits), deduplicate, flag in-destination | `uv run python -m src.collect_places` | `data/processed/places.parquet`, `place_search_saturation.csv` |
-
 | 2 | Generate traveler prompts (20 base x en/tr/de/ru) from config/personas_attributes.yaml | `uv run python -m src.generate_prompts` | `data/processed/prompts.parquet`, `data/review/prompts_review.md` |
 | 3a | Pilot: repeat 1 of four base prompts on all engines | `uv run python -m src.query_engines --pilot` | `answers_pilot.parquet`, `citations_pilot.parquet` |
 | 3b | Label pilot answers (recommendations, clarifying questions, date hedging) | `uv run python -m src.review_pilot` | `pilot_labels.parquet` |
