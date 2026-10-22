@@ -70,3 +70,31 @@ yarimada studyolari:
   sources: ["Nothing found in Kaş by the automatic lookup or by hand (project owner)"]
   verified_by: project owner
   verified_on: 2026-10-22
+
+carruba:
+  name: Carruba Boutique Hotel
+  status: not_in_place_list
+  area: Kaş centre (Andifli, Engin Sk. No:3)
+  sources: ["Central Kaş hotel, Andifli, Engin Sk. No:3 (project owner)",
+            "On Google Maps as 'Carruba Boutique Hotel' (Indoor lodging, 245 reviews); missed by the place search"]
+  verified_by: project owner
+  verified_on: 2026-10-22
+
+# match_names: applies ONLY to these exact names as written in answers (no word matching),
+# because "Sole" alone would also catch other hotels such as "Sole'n Blu".
+sole suites:
+  name: Sole Suites
+  status: same_as
+  google_cid: "14247692550363342977"      # Google Maps listing "Sole Vista Homes"
+  match_names: ["Sole Suites"]
+  sources: ["Same property as Sole Vista Homes (project owner)"]
+  verified_by: project owner
+  verified_on: 2026-10-22
+
+blue island:
+  name: Blue Island Luxury Hotel
+  status: not_on_google_maps
+  sources: ["No Google Maps listing; listed on Trivago (project owner)",
+            "Own website: https://blue-island-luxury.rezervasyonal.com/en/"]
+  verified_by: project owner
+  verified_on: 2026-10-22

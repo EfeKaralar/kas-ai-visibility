@@ -29,7 +29,7 @@ from rapidfuzz import fuzz
 
 from src.collect_places import parse_places
 from src.common import PROCESSED, SETTINGS, Budget, in_destination, km_from_center, load_yaml
-from src.match_mentions import core_name, verified_key
+from src.match_mentions import core_name, exact_name_entry, verified_key
 from src.llm import structured
 from src.review_polygon import fetch_osm
 from src.serper import Serper
@@ -111,7 +111,10 @@ def main():
     rows = []
     for core, group in groups:
         name = group.name_in_answer.value_counts().index[0]   # most common spelling
-        if key := verified_key(core, verified):
+        exact = next((key for spelling in group.name_in_answer.unique()
+                      if (key := exact_name_entry(spelling, verified))), None)
+        word_entries = {k: v for k, v in verified.items() if not v.get("match_names")}
+        if key := exact or verified_key(core, word_entries):
             facts = verified[key]
             rows.append({"core_name": core, "name": name, "spellings": sorted(set(group.name_in_answer)),
                          "mentions": len(group), "recommended": int((group.label == "recommended").sum()),

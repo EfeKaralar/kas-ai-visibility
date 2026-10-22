@@ -120,6 +120,11 @@ def match_answer(answer, places_text: str, uids: set, cores: dict, lodging: set,
     return ordered
 
 
+def exact_name_entry(name: str, verified: dict) -> str | None:
+    """The hand-verified entry that lists this exact name in match_names, if any."""
+    return next((key for key, facts in verified.items() if name in (facts.get("match_names") or [])), None)
+
+
 def verified_key(core: str, keys) -> str | None:
     """The hand-verified entry whose words all appear in this name (catches spelling variants
     such as "Sea Garden Ka Hotel" for the "sea garden" entry); the longest key wins."""
@@ -152,12 +157,15 @@ def apply_corrections(mentions: pd.DataFrame, answers: pd.DataFrame, citations: 
     cid_to_uid = dict(zip(places.cid, places.place_uid))
     aliases = {core: cid_to_uid[str(facts["google_cid"])] for core, facts in verified.items()
                if facts["status"] == "same_as" and str(facts["google_cid"]) in cid_to_uid}
+    # entries with match_names apply only to those exact names, never by word matching
+    by_words = {core: uid for core, uid in aliases.items() if not verified[core].get("match_names")}
     site_owner = own_site_domains(places)
     texts = answers.set_index("answer_id").text
     mentions = mentions.assign(matched_by=mentions.place_uid.notna().map({True: "llm", False: None}))
     for index, mention in mentions[mentions.place_uid.isna()].iterrows():
         core = core_name(mention.name_in_answer)
-        if alias := verified_key(core, aliases):
+        alias = exact_name_entry(mention.name_in_answer, verified) or verified_key(core, by_words)
+        if alias in aliases:
             mentions.loc[index, ["place_uid", "matched_by"]] = [aliases[alias], "manual"]
             continue
         if mention.position is None or pd.isna(mention.position):
