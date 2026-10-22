@@ -1,15 +1,41 @@
 # Kaş AI-visibility PoC
 
-When travelers ask AI assistants where to stay in Kaş, which places get recommended, which are invisible, and which sources feed those answers? See [docs/plan.md](docs/plan.md) for the agreed design and [docs/limitations.md](docs/limitations.md) for caveats.
+When travelers ask AI assistants where to stay in Kaş, which places get recommended, which are invisible, and which sources feed those answers?
 
-## Setup
+- **Findings:** [docs/findings.md](docs/findings.md) · **Slide charts:** [docs/charts/](docs/charts/)
+- **Design and caveats:** [docs/plan.md](docs/plan.md), [docs/metrics.md](docs/metrics.md), [docs/limitations.md](docs/limitations.md)
+
+## Run the app
+
+The Streamlit app presents the results. From the project folder:
+
+```bash
+uv sync                          # first time only: installs the pinned dependencies
+uv run streamlit run app/app.py
+```
+
+The app opens in your browser at http://localhost:8501 (if it does not, open that address). Stop it with Ctrl+C in the terminal.
+
+| Page | What it shows |
+|---|---|
+| Overview | Headline numbers, coverage by engine and language, most-recommended places, recommendations vs Google review count |
+| Hotels | Recommendations per place with engine, language and persona filters; pick a place to see every answer that named it |
+| Outside the list | Recommendations that are not a Kaş place in our list (outside Kaş, permanently closed, unverifiable, ...) |
+| Sources | OTA vs hotel's own website, source shares by engine and language, most-cited domains |
+| Live query | Ask one traveler question to one engine and see the answer, matched places and cited domains |
+| Method and limitations | Findings, metric definitions, limitations and plan |
+
+**Before presenting**
+- Every page except the live query reads precomputed results and works **without internet**.
+- **Live query** needs internet and the API keys in `.env`. Each question costs about $0.01-0.06 and takes 20-60 seconds; it stops at the $50 budget cap and shows a message if the call fails. Its answers never change the study's results. If the connection is unreliable, switch the page to **Pre-run example (offline)**, which shows real answers from the study.
+- The app reads the results in `data/processed/`, which are not in git. On a fresh copy of the repository, run the pipeline below first (or copy that folder over).
+
+## Setup (to re-run the pipeline)
 
 ```bash
 uv sync
 cp .env.example .env   # fill in API keys
 ```
-
-Findings: [docs/findings.md](docs/findings.md) · charts: [docs/charts/](docs/charts/)
 
 ## Pipeline
 
