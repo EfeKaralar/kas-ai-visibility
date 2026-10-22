@@ -14,7 +14,7 @@ uv sync                          # first time only: installs the pinned dependen
 uv run streamlit run app/app.py
 ```
 
-The app opens in your browser at http://localhost:8501 (if it does not, open that address). Stop it with Ctrl+C in the terminal.
+The app opens in your browser at <http://localhost:8501> (if it does not, open that address). Stop it with Ctrl+C in the terminal.
 
 | Page | What it shows |
 |---|---|
@@ -25,7 +25,8 @@ The app opens in your browser at http://localhost:8501 (if it does not, open tha
 | Live query | Ask one traveler question to one engine and see the answer, matched places and cited domains |
 | Method and limitations | Findings, metric definitions, limitations and plan |
 
-**Before presenting**
+### Before presenting
+
 - Every page except the live query reads precomputed results and works **without internet**.
 - **Live query** needs internet and the API keys in `.env`. Each question costs about $0.01-0.06 and takes 20-60 seconds; it stops at the $50 budget cap and shows a message if the call fails. Its answers never change the study's results. If the connection is unreliable, switch the page to **Pre-run example (offline)**, which shows real answers from the study.
 - The app reads the results in `data/processed/`, which are not in git. On a fresh copy of the repository, run the pipeline below first (or copy that folder over).
