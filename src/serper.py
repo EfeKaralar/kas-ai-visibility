@@ -26,9 +26,9 @@ class Serper:
         rows = [json.loads(line) for line in self.budget.ledger.read_text().splitlines() if line]
         return sum(row.get("credits", 0) for row in rows if row["provider"] == "serper")
 
-    def maps_search(self, query: str, lat: float, lon: float, page: int = 1) -> dict:
+    def maps_search(self, query: str, lat: float, lon: float, page: int = 1, zoom: str | None = None) -> dict:
         """One Google Maps results page around a coordinate; cached by request."""
-        request = {"q": query, "ll": f"@{lat},{lon},{self.config['zoom']}",
+        request = {"q": query, "ll": f"@{lat},{lon},{zoom or self.config['zoom']}",
                    "hl": self.config["language"], "page": page}
         key = request_hash(request)
         if cached := cache_get(CACHE, key):
