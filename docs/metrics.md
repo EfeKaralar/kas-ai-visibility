@@ -8,6 +8,7 @@ Written on 2026-10-22, **before** any metric was computed on the full run and wi
 - **Destination population:** `destination_places()`, i.e. accommodation inside the approved polygon (458 places). Every per-place denominator comes from here; `check_population()` must pass.
 - **Mention:** one place named in one answer (one row per place per answer). After matching it has a label (`recommended`, `negative`, `incidental`) and, if matched, a `place_uid`.
 - **Recommendation:** a mention labelled `recommended`. Unless stated otherwise, metrics use recommendations only.
+- **Matcher corrections:** an unmatched name that the lookup finds in the place list (`in_list_missed_by_matcher`) is treated as matched to that place.
 - **Base prompt:** one of the 20 intents; it has 4 language versions.
 
 ## Visibility metrics
@@ -28,7 +29,7 @@ Written on 2026-10-22, **before** any metric was computed on the full run and wi
 ### Domain categories
 Each cited domain gets one category: **OTA** (booking and travel agencies, including Turkish ones, and metasearch such as Trivago), **review site**, **own website**, **map**, **blog/media**, **other**.
 
-- **Own website** is decided per place, not per domain: a citation is the place's own website when its domain equals the website domain of that place in the place list (domains shared by several places, such as instagram.com, never count as own website).
+- **Own website** is decided per place, not per domain: a citation is the place's own website when its domain equals the website domain of that place in the place list (domains shared by several places, such as instagram.com, never count as own website). In S1 (per answer) "own website" means the website of any listed place or any domain hand-categorised as a hotel's website; in S2 and H (per recommendation) it means the recommended place's own site, and another hotel's site counts as "other".
 - **Rule for the hand-made list:** after the full run, the most-cited domains that together account for 80% of all citations are categorised by hand in `config/domains.yaml`. The remaining domains are categorised by the helper LLM and flagged `source: llm`.
 - **Robustness check:** every source metric is recomputed with LLM-categorised domains left out; if a conclusion changes, the report says so.
 
