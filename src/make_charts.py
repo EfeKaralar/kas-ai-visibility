@@ -33,7 +33,8 @@ TARGET_NAMES = {"listed_outside_destination": "Outside Kaş", "outside_destinati
                 "not_in_place_list": "In Kaş, not in our list", "permanently_closed": "Permanently closed",
                 "osm_only": "Only in OpenStreetMap", "unverifiable": "Unverifiable",
                 "not_accommodation": "Not accommodation", "listed_not_accommodation": "Not accommodation",
-                "in_list_missed_by_matcher": "Matcher miss", "unclassified": "Unclassified"}
+                "in_list_missed_by_matcher": "Matcher miss", "unclassified": "Unclassified",
+                "not_looked_up": "Not looked up (named once)"}
 
 plt.rcParams.update({
     "figure.facecolor": SURFACE, "axes.facecolor": SURFACE, "savefig.facecolor": SURFACE,

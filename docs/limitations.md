@@ -20,6 +20,7 @@ Kept from day 1 for the presentation and later analysis.
 
 ## Unmatched places
 - **Closed places are invisible to the automatic lookup.** Serper's Google Maps results omit permanently closed places entirely (no result and no status field), although Google itself shows them as "Permanently closed". Automatic categories "osm_only" and "unverifiable" can therefore contain closed places. Example: Hotel Cachet, recommended in 8 of 48 pilot answers, is permanently closed per Google Maps and Tripadvisor (checked by hand on 2026-10-22).
+- **18% of mentions do not match the Kaş place list (82% match).** This is acceptable for the PoC: most of the remainder is very likely in Kaş municipality/district but outside our chosen town boundary (e.g. Kalkan, Patara, Gelemiş), and the boundary decision is revisited after the results. To save Serper credits, only the 80 unmatched names mentioned 2+ times were looked up (they hold about 80% of unmatched mentions); 155 names mentioned once are labelled "not looked up".
 - Hand-verified facts are kept in `config/manual_verifications.yaml` (with sources and date) and override the lookup. Only the most-mentioned osm_only/unverifiable names are checked by hand, so the remaining ones may still include closures.
 
 ## Scope

@@ -11,6 +11,7 @@ or, failing that, when the helper LLM judges one of the top results to be the sa
   (applied first: Serper omits permanently closed places, so closures are invisible to the lookup)
 - not on Google, but in OpenStreetMap        -> "osm_only" (exists in OSM; possibly closed or unlisted)
 - no confident match anywhere                -> "unverifiable" (possibly closed or non-existent)
+- with --min-mentions N, names mentioned fewer than N times -> "not_looked_up" (saves credits)
 
     uv run python -m src.classify_unmatched --pilot
     uv run python -m src.classify_unmatched
@@ -28,7 +29,7 @@ from rapidfuzz import fuzz
 
 from src.collect_places import parse_places
 from src.common import PROCESSED, SETTINGS, Budget, in_destination, km_from_center, load_yaml
-from src.match_mentions import core_name
+from src.match_mentions import core_name, verified_key
 from src.llm import structured
 from src.review_polygon import fetch_osm
 from src.serper import Serper
@@ -88,6 +89,8 @@ def look_up(name: str, client: Serper, budget: Budget) -> tuple[dict | None, flo
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--pilot", action="store_true")
+    parser.add_argument("--min-mentions", type=int, default=1,
+                        help="look up only names mentioned at least this often; others become not_looked_up")
     args = parser.parse_args()
     suffix = "_pilot" if args.pilot else ""
     budget = Budget()
@@ -108,13 +111,18 @@ def main():
     rows = []
     for core, group in groups:
         name = group.name_in_answer.value_counts().index[0]   # most common spelling
-        if core in verified:
-            facts = verified[core]
+        if key := verified_key(core, verified):
+            facts = verified[key]
             rows.append({"core_name": core, "name": name, "spellings": sorted(set(group.name_in_answer)),
                          "mentions": len(group), "recommended": int((group.label == "recommended").sum()),
                          "answers": group.answer_id.nunique(), "found_by": "manual", "found_name": facts["name"],
                          "category": facts["status"], "area": facts.get("area"),
                          "evidence": "; ".join(facts["sources"])})
+            continue
+        if len(group) < args.min_mentions:   # to save credits (see docs/limitations.md)
+            rows.append({"core_name": core, "name": name, "spellings": sorted(set(group.name_in_answer)),
+                         "mentions": len(group), "recommended": int((group.label == "recommended").sum()),
+                         "answers": group.answer_id.nunique(), "found_by": "skipped", "category": "not_looked_up"})
             continue
         found, score, method = look_up(name, client, budget)
         row = {"core_name": core, "name": name, "spellings": sorted(set(group.name_in_answer)),
@@ -146,7 +154,8 @@ def main():
     table = pd.DataFrame(rows)
     table.to_parquet(PROCESSED / f"unmatched_places{suffix}.parquet", index=False)
     print(table.groupby("category").agg(names=("name", "size"), mentions=("mentions", "sum")).to_string())
-    to_check = table[table.category.isin(["osm_only", "unverifiable"]) & (table.found_by != "manual")]
+    to_check = table[table.category.isin(["osm_only", "unverifiable", "not_in_place_list"])
+                     & (table.found_by != "manual")]
     to_check = to_check.sort_values("mentions", ascending=False)
     if len(to_check):
         print("\nCheck these by hand before reporting (closures are invisible to the lookup); record results in "

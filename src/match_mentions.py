@@ -120,6 +120,14 @@ def match_answer(answer, places_text: str, uids: set, cores: dict, lodging: set,
     return ordered
 
 
+def verified_key(core: str, keys) -> str | None:
+    """The hand-verified entry whose words all appear in this name (catches spelling variants
+    such as "Sea Garden Ka Hotel" for the "sea garden" entry); the longest key wins."""
+    words = set(core.split())
+    matches = [key for key in keys if key and set(key.split()) <= words]
+    return max(matches, key=len) if matches else None
+
+
 def own_site_domains(places: pd.DataFrame) -> dict[str, str]:
     """Website domain -> place_uid, only for domains that belong to exactly one place
     (a website field pointing at booking.com or instagram.com says nothing about identity)."""
@@ -149,8 +157,8 @@ def apply_corrections(mentions: pd.DataFrame, answers: pd.DataFrame, citations: 
     mentions = mentions.assign(matched_by=mentions.place_uid.notna().map({True: "llm", False: None}))
     for index, mention in mentions[mentions.place_uid.isna()].iterrows():
         core = core_name(mention.name_in_answer)
-        if core in aliases:
-            mentions.loc[index, ["place_uid", "matched_by"]] = [aliases[core], "manual"]
+        if alias := verified_key(core, aliases):
+            mentions.loc[index, ["place_uid", "matched_by"]] = [aliases[alias], "manual"]
             continue
         if mention.position is None or pd.isna(mention.position):
             continue
