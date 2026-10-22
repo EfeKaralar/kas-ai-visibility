@@ -8,7 +8,7 @@ Kept from day 1 for the presentation and later analysis.
 - **Correlation, not causation.** Popularity (review count) strongly influences recommendations; the PoC describes patterns and does not prove causes.
 - **Cited ≠ consulted.** Only URLs the answer cites are counted; engines may read more than they cite.
 
-- **Trip dates are a month and year, not exact dates.** Prompts say e.g. "in September 2027" (the year is added by fixed grammar rules, since every month had passed in 2026). Engines may still hedge on prices and availability without exact dates.
+- **Trip dates are a month and year, not exact dates.** Prompts say e.g. "in September 2027" (the year is added by fixed grammar rules, since every month had passed in 2026). In the pilot, 71% of answers hedged on prices without exact dates (OpenAI and Anthropic 100%, Gemini 12%) and 19% closed by offering to refine if given exact dates. This crossed the agreed 10% threshold for adding a topic to the trip context, but exact dates were deliberately not added: every pilot answer still recommended specific places (the rule's purpose), the questions were closing offers rather than blockers, and exact dates would push engines toward availability checks they cannot perform.
 
 ## Place list
 - Depends on Google Maps' coverage of Kaş.
