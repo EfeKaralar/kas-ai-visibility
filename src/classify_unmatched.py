@@ -116,11 +116,19 @@ def main():
         word_entries = {k: v for k, v in verified.items() if not v.get("match_names")}
         if key := exact or verified_key(core, word_entries):
             facts = verified[key]
-            rows.append({"core_name": core, "name": name, "spellings": sorted(set(group.name_in_answer)),
-                         "mentions": len(group), "recommended": int((group.label == "recommended").sum()),
-                         "answers": group.answer_id.nunique(), "found_by": "manual", "found_name": facts["name"],
-                         "category": facts["status"], "area": facts.get("area"),
-                         "evidence": "; ".join(facts["sources"])})
+            row = {"core_name": core, "name": name, "spellings": sorted(set(group.name_in_answer)),
+                   "mentions": len(group), "recommended": int((group.label == "recommended").sum()),
+                   "answers": group.answer_id.nunique(), "found_by": "manual", "found_name": facts["name"],
+                   "category": facts["status"], "area": facts.get("area"), "evidence": "; ".join(facts["sources"])}
+            if facts["status"] == "not_in_place_list":   # keep its Google data (cached lookup) for the place list
+                found, _, _ = look_up(name, client, budget)
+                if found:
+                    row.update({"cid": found["cid"], "lat": found["lat"], "lon": found["lon"],
+                                "google_category": found["category"], "review_count": found["review_count"],
+                                "is_accommodation": True, "in_destination": in_destination(found["lat"], found["lon"])})
+                    if found["cid"] in known_cids:
+                        row["category"], row["place_uid"] = "in_list_missed_by_matcher", known_cids[found["cid"]]
+            rows.append(row)
             continue
         if len(group) < args.min_mentions:   # to save credits (see docs/limitations.md)
             rows.append({"core_name": core, "name": name, "spellings": sorted(set(group.name_in_answer)),

@@ -14,6 +14,7 @@ Kept from day 1 for the presentation and later analysis.
 - Depends on Google Maps' coverage of Kaş.
 - Collected with "hotel", "otel", "pansiyon" and "apart" searches on a 46-point grid. Against OpenStreetMap, 77 of 104 named places in Kaş were found (74%). Of the missing places with "hotel" in the name, 3 were confirmed absent from Google Maps (likely closed or renamed).
 - Searches stop paging when a page adds no new places. In the dense town center, page 1 repeats the same prominent hotels, so lower-ranked places can be missed (Kekova Hotel was missed by the hotel searches this way and found only through "pansiyon"). Extra pages were not fetched to conserve free credits.
+- 21 places missed by the grid search (e.g. Carruba Boutique Hotel, 245 Google reviews) were found through the answers themselves and added to the list. Places that no answer named and the grid missed remain absent, so coverage may still be slightly overstated.
 - Google lists some properties once per unit (e.g. "Kale Apart - Studio with Sea View"); 70 such or duplicate listings were merged into their property by name prefix within 300 m. A few unit listings with unusual names may remain.
 - Google categories are owner-chosen and inconsistent (many pensions are listed as hotels).
 - Destination boundary is a hand-drawn polygon (Kaş town + Çukurbağ peninsula); coverage is sensitive to it, so distance from center is stored for every place.

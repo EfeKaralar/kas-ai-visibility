@@ -199,11 +199,14 @@ def main():
     answers = pd.read_parquet(PROCESSED / f"answers{suffix}.parquet")
     answers = answers[answers.error.isna() & answers.text.notna()]
     places = pd.read_parquet(PROCESSED / "places.parquet")
-    places_text = place_list_text(places)
-    uids = set(places.place_uid)
-    lodging = set(places[places.is_accommodation].place_uid)
+    # the LLM sees only the grid-collected list, so its prompts (and cache) do not change when
+    # src/add_found_places.py appends places found through answers; those are matched downstream
+    grid = places[places.source == "google_maps_grid"] if "source" in places else places
+    places_text = place_list_text(grid)
+    uids = set(grid.place_uid)
+    lodging = set(grid[grid.is_accommodation].place_uid)
     # names made only of generic words (e.g. "Kaş Otel") keep their full name for comparison
-    cores = {p.place_uid: core_name(p.name) or unidecode(p.name).lower() for p in places.itertuples()}
+    cores = {p.place_uid: core_name(p.name) or unidecode(p.name).lower() for p in grid.itertuples()}
 
     rows = []
     with ThreadPoolExecutor(max_workers=WORKERS) as pool:

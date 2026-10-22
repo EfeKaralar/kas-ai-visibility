@@ -20,8 +20,15 @@ cp .env.example .env   # fill in API keys
 | 3a | Pilot: repeat 1 of four base prompts on all engines | `uv run python -m src.query_engines --pilot` | `answers_pilot.parquet`, `citations_pilot.parquet` |
 | 3b | Label pilot answers (recommendations, clarifying questions, date hedging) | `uv run python -m src.review_pilot` | `pilot_labels.parquet` |
 | 3c | Query all prompts x engines x 3 repeats | `caffeinate -i uv run python -m src.query_engines` | `answers.parquet`, `citations.parquet` |
+| 4a | Match named places to the list (LLM + hand-verified aliases + own-website citations) | `uv run python -m src.match_mentions` | `mentions.parquet` |
+| 4b | Classify unmatched names (Google Maps lookup, LLM judge, OSM, manual verifications) | `uv run python -m src.classify_unmatched --min-mentions 2` | `unmatched_places.parquet` |
+| 4c | Add real Kaş places found only through answers to the place list, then re-run 4b | `uv run python -m src.add_found_places` | `places.parquet` (source `answer_lookup`) |
+| 4d | Hand-check sample and scoring | `uv run python -m src.hand_check prepare` / `score` | `data/review/hand_check.*`, `metrics/matcher_quality.parquet` |
+| 5a | Categorise cited domains (hand list for the 80% head, LLM for the tail) | `uv run python -m src.categorize_domains` | `domains.parquet` |
+| 5b | Compute metrics (definitions in docs/metrics.md) | `uv run python -m src.compute_metrics` | `data/processed/metrics/` |
+| 5c | Export slide charts | `uv run python -m src.make_charts` | `docs/charts/` |
 
-Later steps (matching, metrics, app) are added as they are built.
+Hand-verified facts about places live in `config/manual_verifications.yaml`; hand categories for domains in `config/domains.yaml`. Every step except 1, 3 and the first run of 4b reads only cached data.
 
 ### Stopping and resuming the engine run
 Every answer is saved the moment it arrives, and a re-run only makes the calls not yet saved, so stopping never loses work or pays twice. Ctrl+C (or `kill`) stops new calls and lets the few in-flight calls, already paid for, finish and be saved; press Ctrl+C again to abort those too. Sleep or a lost connection makes in-flight calls fail; they are retried on the next run. Run the same command again to continue.

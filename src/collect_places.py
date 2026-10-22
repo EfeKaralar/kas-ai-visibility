@@ -130,6 +130,7 @@ def main():
     places["in_destination"] = [polygon.contains(Point(lon, lat)) for lat, lon in zip(places.lat, places.lon)]
     places["km_from_center"] = [round(km_from_center(lat, lon), 2) for lat, lon in zip(places.lat, places.lon)]
     places["place_uid"] = ["P" + str(number).zfill(4) for number in range(len(places))]
+    places["source"] = "google_maps_grid"   # src/add_found_places.py appends "answer_lookup" rows
 
     PROCESSED.mkdir(parents=True, exist_ok=True)
     places.to_parquet(PROCESSED / "places.parquet", index=False)
