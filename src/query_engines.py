@@ -14,6 +14,7 @@ each citation to the places named near it.
 
 import argparse
 import json
+import signal
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -165,7 +166,9 @@ def query(request: dict, budget: Budget, live: bool = False) -> dict:
     folder = CACHE / ("live" if live else request["engine"])
     key = request_hash(request)
     if cached := cache_get(folder, key):
-        return with_extraction(cached) if "message" in cached else cached
+        if "cost_usd" not in cached:  # killed after caching but before recording the cost
+            record_cost(folder, key, cached, budget)
+        return with_extraction(cached)
     with ledger_lock:
         budget.check(COST_CEILING_PER_CALL)
     config = SETTINGS["engine_queries"]
@@ -183,19 +186,25 @@ def query(request: dict, budget: Budget, live: bool = False) -> dict:
     if message is None:
         return {"request": request, "key": key, "error": error, "fetched_at": now_iso()}
 
-    # The call is paid for: cache the raw response and record its cost before any parsing,
-    # so a parsing bug can never cause the same request to be paid for twice.
+    # The call is paid for: cache the raw response first, then record its cost, then parse.
+    # A crash or kill at any point can never cause the same request to be paid for twice,
+    # and a cost left unrecorded by a kill is recorded on the next run (see the cache hit above).
     record = {"request": request, "key": key, "fetched_at": now_iso(), "seconds": round(time.time() - started, 1),
               "model_id": message["response_metadata"].get("model_name"),
               "response_id": message.get("id"), "usage": message.get("usage_metadata") or {}, "message": message}
     cache_put(folder, key, record)
+    record_cost(folder, key, record, budget)
+    return with_extraction(record)
+
+
+def record_cost(folder, key: str, record: dict, budget: Budget) -> None:
+    request = record["request"]
     with ledger_lock:
-        searches = count_searches(request["engine"], message)
+        searches = count_searches(request["engine"], record["message"])
         record["cost_usd"] = answer_cost(request["model"], record["usage"], searches, budget)
         budget.record(STAGE, request["engine"], record["cost_usd"], f"{request['prompt_id']} r{request['repeat']}",
                       model=request["model"], searches=searches)
-    cache_put(folder, key, record)
-    return with_extraction(record)
+        cache_put(folder, key, {k: v for k, v in record.items() if k not in ("extracted", "extraction_error")})
 
 
 def with_extraction(record: dict) -> dict:
@@ -240,30 +249,57 @@ def main():
         repeats = range(1, 2)
     requests_ = [request_for(engine, prompt, repeat) for prompt in prompts.itertuples()
                  for engine in SETTINGS["engines"] for repeat in repeats]
+    pending = [r for r in requests_ if cache_get(CACHE / r["engine"], request_hash(r)) is None]
     print(f"{len(requests_)} calls ({len(prompts)} prompts x {len(SETTINGS['engines'])} engines x "
-          f"{len(repeats)} repeats); spent so far ${budget.spent():.2f}")
+          f"{len(repeats)} repeats): {len(requests_) - len(pending)} already saved, {len(pending)} to run. "
+          f"Spent so far ${budget.spent():.2f}")
 
-    records = []
+    # Ctrl+C or `kill` stops new calls; calls already in flight are paid for, so they are
+    # allowed to finish and be saved. Re-running the command continues from where it stopped.
+    def interrupt(*_):
+        raise KeyboardInterrupt
+    signal.signal(signal.SIGINT, interrupt)   # explicit: a parent may have set Ctrl+C to be ignored
+    signal.signal(signal.SIGTERM, interrupt)
+    failures = {}
     with ThreadPoolExecutor(max_workers=config["workers"]) as pool:
-        futures = [pool.submit(query, request, budget) for request in requests_]
-        for done, future in enumerate(as_completed(futures), start=1):
-            try:
-                records.append(future.result())
-            except BudgetExceeded as stop:
-                print(f"STOPPED: {stop}")
-                pool.shutdown(cancel_futures=True)
-                break
-            except Exception as exc:  # one failed call must not stop the run
-                print(f"  call failed: {exc!r}"[:300])
-            if done % 10 == 0 or done == len(futures):
-                print(f"  {done}/{len(futures)} done, spent ${budget.spent():.2f}")
+        futures = {pool.submit(query, request, budget): request for request in pending}
+        try:
+            for done, future in enumerate(as_completed(futures), start=1):
+                try:
+                    result = future.result()
+                    if result.get("error"):
+                        failures[result["key"]] = result
+                except BudgetExceeded as stop:
+                    print(f"STOPPED: {stop}")
+                    pool.shutdown(cancel_futures=True)
+                    break
+                except Exception as exc:  # one failed call must not stop the run
+                    print(f"  call failed: {exc!r}"[:300])
+                if done % 10 == 0 or done == len(futures):
+                    print(f"  {done}/{len(futures)} done, spent ${budget.spent():.2f}")
+        except KeyboardInterrupt:
+            running = sum(f.running() for f in futures)
+            print(f"\nInterrupted: no new calls. Waiting for {running} call(s) already in flight to be saved "
+                  "(press Ctrl+C again to abort them). Re-run the same command to continue.")
+            pool.shutdown(wait=True, cancel_futures=True)
 
+    # Tables always reflect everything saved so far, including earlier interrupted runs.
+    records = []
+    for request in requests_:
+        key = request_hash(request)
+        cached = cache_get(CACHE / request["engine"], key)
+        if cached:
+            records.append(with_extraction(cached))
+        else:
+            records.append(failures.get(key) or {"request": request, "key": key, "error": "not run yet",
+                                                 "fetched_at": None})
     answers, citations = to_tables(records)
     suffix = "_pilot" if args.pilot else ""
     answers.to_parquet(PROCESSED / f"answers{suffix}.parquet", index=False)
     citations.to_parquet(PROCESSED / f"citations{suffix}.parquet", index=False)
     failed = answers[answers.error.notna()]
-    print(f"\nAnswers: {len(answers)} ({len(failed)} failed); citations: {len(citations)} "
+    print(f"\nAnswers: {len(answers)} ({len(failed)} failed or not run yet; re-run to retry them); "
+          f"citations: {len(citations)} "
           f"({(~citations.url_resolved).sum() if len(citations) else 0} unresolved)")
     print(answers.groupby("engine")[["seconds", "searches", "n_citations", "cost_usd"]].mean().round(3).to_string())
     print(f"Spend so far: ${budget.spent():.2f}")

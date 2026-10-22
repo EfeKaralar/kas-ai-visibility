@@ -95,8 +95,11 @@ def cache_get(folder: Path, key: str):
 
 
 def cache_put(folder: Path, key: str, record: dict) -> None:
+    """Atomic write: a process killed mid-write leaves the old file or none, never a broken one."""
     folder.mkdir(parents=True, exist_ok=True)
-    (folder / f"{key}.json").write_text(json.dumps(record, ensure_ascii=False, indent=1))
+    temporary = folder / f".{key}.{os.getpid()}.tmp"
+    temporary.write_text(json.dumps(record, ensure_ascii=False, indent=1))
+    os.replace(temporary, folder / f"{key}.json")
 
 
 # --- budget ----------------------------------------------------------------
