@@ -16,6 +16,7 @@ position in the answer and how it was matched); unmatched names have place_uid e
 """
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import re
 from urllib.parse import urlsplit
 from typing import Literal
@@ -29,6 +30,7 @@ from src.common import PROCESSED, Budget, load_yaml
 from src.llm import structured
 
 STAGE = "mention_matching"
+WORKERS = 8
 GENERIC_WORDS = re.compile(
     r"\b(hotel|otel|oteli|pansiyon|pension|pansyon|apart|aparts|apartment|apartments|kas|villa|villas|suites?|suit|"
     r"boutique|butik|the|and|club|resort|deluxe|luxury|hostel|motel|adults?|only|spa|restaurant|ve|exclusive)\b")
@@ -188,10 +190,13 @@ def main():
     cores = {p.place_uid: core_name(p.name) or unidecode(p.name).lower() for p in places.itertuples()}
 
     rows = []
-    for done, answer in enumerate(answers.itertuples(), start=1):
-        rows += match_answer(answer, places_text, uids, cores, lodging, budget)
-        if done % 20 == 0 or done == len(answers):
-            print(f"  {done}/{len(answers)} answers matched, spent ${budget.spent():.2f}")
+    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
+        futures = [pool.submit(match_answer, answer, places_text, uids, cores, lodging, budget)
+                   for answer in answers.itertuples()]
+        for done, future in enumerate(as_completed(futures), start=1):
+            rows += future.result()
+            if done % 50 == 0 or done == len(answers):
+                print(f"  {done}/{len(answers)} answers matched, spent ${budget.spent():.2f}", flush=True)
 
     citations = pd.read_parquet(PROCESSED / f"citations{suffix}.parquet")
     mentions = apply_corrections(pd.DataFrame(rows), answers, citations, places).merge(

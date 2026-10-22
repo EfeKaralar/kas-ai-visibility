@@ -7,6 +7,7 @@ dollar cost recorded in the shared budget ledger.
 """
 
 import json
+import threading
 
 from langchain.chat_models import init_chat_model
 from pydantic import BaseModel
@@ -15,6 +16,7 @@ from src.common import PRICING, RAW, SETTINGS, Budget, cache_get, cache_put, now
 
 CACHE = RAW / "llm"
 COST_CEILING_PER_CALL = 0.02     # pre-call budget check; actual cost is recorded afterwards
+ledger_lock = threading.Lock()    # calls may run in parallel threads
 
 
 def model_name(role: str) -> str:
@@ -37,7 +39,8 @@ def structured(role: str, schema: type[BaseModel], messages: list[tuple[str, str
     if cached := cache_get(folder, key):
         return schema.model_validate(cached["parsed"])
 
-    budget.check(COST_CEILING_PER_CALL)
+    with ledger_lock:
+        budget.check(COST_CEILING_PER_CALL)
     runnable = init_chat_model(model).with_structured_output(schema, include_raw=True)
     result = runnable.invoke(messages)
     if result["parsing_error"] or result["parsed"] is None:
@@ -45,7 +48,8 @@ def structured(role: str, schema: type[BaseModel], messages: list[tuple[str, str
     raw = result["raw"]
     usage = dict(raw.usage_metadata or {})
     cost = call_cost(model, usage)
-    budget.record(stage, model.split(":")[0], cost, f"{model} {usage.get('total_tokens', 0)} tokens")
+    with ledger_lock:
+        budget.record(stage, model.split(":")[0], cost, f"{model} {usage.get('total_tokens', 0)} tokens")
     cache_put(folder, key, {
         "request": request, "fetched_at": now_iso(), "model": model,
         "response_metadata": json.loads(json.dumps(raw.response_metadata, default=str)),
