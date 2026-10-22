@@ -179,8 +179,10 @@ def request_for(engine: str, prompt: pd.Series, repeat: int) -> dict:
             "prompt_id": prompt.prompt_id, "text": prompt.text, "repeat": repeat}
 
 
-def query(request: dict, budget: Budget, live: bool = False) -> dict:
-    """One engine call, cached. Returns the cache record (raw message plus extraction)."""
+def query(request: dict, budget: Budget, live: bool = False, retries: int | None = None,
+          timeout: int | None = None) -> dict:
+    """One engine call, cached. Returns the cache record (raw message plus extraction).
+    Live calls (the app's live-query box) are cached separately and never enter the metrics."""
     folder = CACHE / ("live" if live else request["engine"])
     key = request_hash(request)
     if cached := cache_get(folder, key):
@@ -190,11 +192,12 @@ def query(request: dict, budget: Budget, live: bool = False) -> dict:
     with ledger_lock:
         budget.check(COST_CEILING_PER_CALL)
     config = SETTINGS["engine_queries"]
-    model = init_chat_model(request["model"], timeout=config["timeout_seconds"], max_retries=0, **request["init"])
+    model = init_chat_model(request["model"], timeout=timeout or config["timeout_seconds"], max_retries=0,
+                            **request["init"])
     model = model.bind_tools(request["tools"])
 
     error, message, started = None, None, time.time()
-    for attempt in range(config["retries"] + 1):
+    for attempt in range((config["retries"] if retries is None else retries) + 1):
         try:
             message = model.invoke(request["text"]).model_dump(mode="json")
             break

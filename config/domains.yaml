@@ -11,6 +11,10 @@
 #   booking partners); Yandex Maps pages count as "map".
 # - Editorial "best hotels" guides count as "blog_media" even when they carry booking links.
 #
+# Hand categories take precedence over the place list: a listed place's Google website field
+# sometimes points to an OTA page (etstur.com, expedia.com, trip.com), which must not count as
+# that place's own website.
+#
 # hotel_website entries may name the place they belong to (place_cid, Google's stable id) when
 # Google lists a different website for it, so they count as that place's own website.
 
@@ -61,6 +65,11 @@ categories:
   kas-hotels.co: ota                    # judgement: affiliate directory
   boutiquesmallhotels.com: ota          # judgement: directory
   google.com.tr: ota                    # judgement: Google Hotels pages (metasearch)
+  # OTAs that appear as a listed place's Google "website" field; hand categories take precedence
+  # over the place list, so these never count as that place's own website.
+  etstur.com: ota                       # website field of "Otel Andifli"
+  expedia.com: ota                      # website field of "Mitra apart"
+  trip.com: ota                         # website field of "Yaz Apart"
 
   # Review sites
   tripadvisor.com: review_site

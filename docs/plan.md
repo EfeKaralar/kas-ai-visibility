@@ -12,7 +12,7 @@
 - **Manual closure check (standing step before reporting):** Serper omits permanently closed places, so the most-mentioned osm_only and unverifiable names are checked by hand on Google Maps / Tripadvisor and recorded in `config/manual_verifications.yaml` (status, sources, date), which overrides the lookup. First case: Hotel Cachet, permanently closed.
 - **Stretch goal data source:** open. Serper does not return hotel amenities; candidates are SerpApi's free 250 searches/month (Google Hotels property details) or Google Places API. Decide when the stretch goal starts.
 
-- **Open decision (after the main run): town vs district.** Answers to "Kaş" prompts also recommend places in Kalkan, Patara and Gelemiş, which are outside our town polygon but inside Kaş district (municipality). Options: keep the town boundary; report "outside town, inside Kaş district" as its own category; or widen the destination (needs a new place collection for those areas).
+- **Boundary decision (2026-10-22): keep the town boundary.** Answers also recommend places outside it (mostly within 5 km, e.g. Bayındır, plus Kalkan, Patara and Gelemiş), all in Kaş district. This is reported as a finding (engines read "Kaş" as the district) rather than widening the destination, which would need a new place collection.
 
 ## Prompts
 - 8 personas, ~10 attributes (list decided together before Step 2), 20 base prompts × TR/EN/DE/RU = 80 prompts. Same intent per language, written naturally. Every prompt names Kaş.

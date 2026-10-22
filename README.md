@@ -9,6 +9,8 @@ uv sync
 cp .env.example .env   # fill in API keys
 ```
 
+Findings: [docs/findings.md](docs/findings.md) · charts: [docs/charts/](docs/charts/)
+
 ## Pipeline
 
 | Step | What it does | Command | Output |
@@ -26,6 +28,8 @@ cp .env.example .env   # fill in API keys
 | 5a | Categorise cited domains (hand list for the 80% head, LLM for the tail) | `uv run python -m src.categorize_domains` | `domains.parquet` |
 | 5b | Compute metrics (definitions in docs/metrics.md) | `uv run python -m src.compute_metrics` | `data/processed/metrics/` |
 | 5c | Export slide charts | `uv run python -m src.make_charts` | `docs/charts/` |
+| 5d | Write the findings summary (every number computed from the metric tables) | `uv run python -m src.write_findings` | `docs/findings.md` |
+| 6 | Streamlit app: overview, hotels, outside the list, sources, live query, method | `uv run streamlit run app/app.py` | browser |
 
 Hand-verified facts about places live in `config/manual_verifications.yaml`; hand categories for domains in `config/domains.yaml`. Every step except 1, 3 and the first run of 4b reads only cached data.
 

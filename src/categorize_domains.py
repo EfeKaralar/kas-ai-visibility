@@ -61,8 +61,12 @@ def hand_categories() -> dict[str, str]:
 
 
 def own_sites(places: pd.DataFrame) -> dict[str, str]:
-    """domain -> place_uid: websites from the place list plus hand-mapped own websites."""
-    sites = own_site_domains(places)
+    """domain -> place_uid: websites from the place list plus hand-mapped own websites. A domain
+    categorised by hand as anything but hotel_website (e.g. an OTA that appears as a place's
+    Google website field) is never a place's own website."""
+    hand = hand_categories()
+    sites = {domain: uid for domain, uid in own_site_domains(places).items()
+             if hand.get(domain, "hotel_website") == "hotel_website"}
     cid_to_uid = dict(zip(places.cid, places.place_uid))
     for domain, entry in hand_entries().items():
         if isinstance(entry, dict) and str(entry.get("place_cid")) in cid_to_uid:
@@ -93,9 +97,10 @@ def main():
     table["in_head"] = table.cumulative_share.shift(fill_value=0) < HAND_COVERAGE
 
     hand = hand_categories()
-    place_sites = own_site_domains(pd.read_parquet(PROCESSED / "places.parquet"))
-    table["category"] = table.domain.map(lambda d: "hotel_website" if d in place_sites else hand.get(d))
-    table["source"] = table.domain.map(lambda d: "place_list" if d in place_sites else ("hand" if d in hand else None))
+    place_sites = own_sites(pd.read_parquet(PROCESSED / "places.parquet"))
+    # hand categories first: they override a place's website field that points to an OTA
+    table["category"] = table.domain.map(lambda d: hand.get(d) or ("hotel_website" if d in place_sites else None))
+    table["source"] = table.domain.map(lambda d: "hand" if d in hand else ("place_list" if d in place_sites else None))
 
     missing_head = table[table.in_head & table.category.isna()]
     if len(missing_head) and not args.pilot:

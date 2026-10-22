@@ -302,6 +302,8 @@ def main():
     hypothesis_table, verdict = hypothesis(links, data["destination"])
     robust_table, robust_verdict = robustness(links, data)
     tables = {
+        "recommendations": recs.drop(columns=[c for c in ("fuzzy_uid", "fuzzy_score", "llm_uid_unknown")
+                                              if c in recs.columns]),
         "place_summary": summary, "place_breakdown": breakdown,
         "coverage": coverage(recs, data["destination"]), "concentration": concentration(recs),
         "popularity": popularity(summary), "no_recommendation": no_recommendation(data, recs),

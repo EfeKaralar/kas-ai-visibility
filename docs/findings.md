@@ -8,7 +8,7 @@ Metric definitions were fixed in advance in [metrics.md](metrics.md); caveats ar
 - **Fewer than half of Kaş's places ever get recommended.** Across 720 answers, 46% of the 479 places in Kaş were recommended at least once; 258 never were, including 11 of the 88 places with 300+ Google reviews.
 - **Each engine sees a different, narrow slice.** One engine alone recommends 22%-40% of Kaş places, and only 65 places are recommended by all three.
 - **Popularity matters but does not decide.** Recommendations rise with Google review count (Spearman ρ = 0.59), yet well-reviewed places are missing and the same question asked three times shares only about a quarter to a third of its recommended places.
-- **OTAs back most recommendations, except for OpenAI.** Recommended places are backed by OTA pages 59% of the time and by their own website 22%. Gemini and Anthropic lean heavily on OTAs; OpenAI cites hotels' own websites more often (62% vs 29%). Under the rule fixed in advance, the hypothesis is **mixed**.
+- **OTAs back most recommendations, except for OpenAI.** Recommended places are backed by OTA pages 63% of the time and by their own website 22%. Gemini and Anthropic lean heavily on OTAs; OpenAI cites hotels' own websites more often (62% vs 32%). Under the rule fixed in advance, the hypothesis is **mixed**.
 - **Some answers are out of date.** A permanently closed hotel was recommended in 59 of 720 answers (8.2%), by all three engines and in all four languages.
 
 ## 1. What was measured
@@ -16,7 +16,7 @@ Metric definitions were fixed in advance in [metrics.md](metrics.md); caveats ar
 - **Destination:** Kaş town, the Çukurbağ peninsula and Limanağzı (hand-drawn boundary); 479 places to stay from Google Maps, including 21 found only through the answers.
 - **Questions:** 20 traveler questions from 8 personas (couples, families, divers, remote workers, retirees, pet owners, honeymooners, road-trippers), each written naturally in English, Turkish, German and Russian.
 - **Engines:** OpenAI (gpt-6-luna), Google Gemini (gemini-3.8-flash) and Anthropic (claude-haiku-5-5), each with its own web search, through the API; every question asked 3 times.
-- **Scale:** 720 answers (0 failed), 4032 named places, 3630 recommendations; 82% of named places matched to the Kaş list automatically. Total API spend $22.89, plus 1338 free Serper credits.
+- **Scale:** 720 answers (0 failed), 4032 named places, 3630 recommendations; 82% of named places matched to the Kaş list automatically. Total API spend $22.91, plus 1338 free Serper credits.
 
 ## 2. Who gets recommended
 
@@ -35,22 +35,22 @@ Each citation is linked to the recommended places named in the same part of the 
 
 | Engine | OTA | Hotel's own website | Blog / media | Review site | Other |
 |---|---|---|---|---|---|
-| All engines | 60% | 9% | 10% | 4% | 15% |
-| OpenAI | 34% | 39% | 2% | 1% | 25% |
-| Gemini | 69% | 6% | 7% | 1% | 16% |
-| Anthropic | 62% | 2% | 18% | 8% | 10% |
+| All engines | 68% | 9% | 10% | 4% | 8% |
+| OpenAI | 38% | 39% | 2% | 1% | 20% |
+| Gemini | 79% | 6% | 7% | 1% | 7% |
+| Anthropic | 69% | 1% | 17% | 8% | 4% |
 
 **Hypothesis test** (recommended Kaş places that have a website; a recommendation can be backed by both). (Chart 5)
 
 | Engine | Backed by an OTA | Backed by own website | No source attached | Recommendations |
 |---|---|---|---|---|
-| All engines | 59% | 22% | 9% | 2592 |
-| OpenAI | 29% | 62% | 0% | 606 |
-| Gemini | 71% | 19% | 22% | 767 |
-| Anthropic | 67% | 3% | 6% | 1219 |
+| All engines | 63% | 22% | 9% | 2592 |
+| OpenAI | 32% | 62% | 0% | 606 |
+| Gemini | 73% | 19% | 22% | 767 |
+| Anthropic | 71% | 3% | 6% | 1219 |
 
 - **Verdict, by the rule fixed in advance: mixed.** OTA backing is far higher overall and for Gemini and Anthropic, but OpenAI cites hotels' own websites more often than OTAs, so the "every engine" condition fails.
-- **Robust:** leaving out the domains categorised by the AI gives the same picture (OTA 59% vs own website 23%; verdict mixed).
+- **Robust:** leaving out the domains categorised by the AI gives the same picture (OTA 63% vs own website 23%; verdict mixed).
 - **Gemini often attaches no source** to a recommended place (22%).
 - **What this suggests for HotelRunner:** the content hotels distribute through OTAs is what Gemini and Anthropic cite most, so channel content plausibly shapes visibility there; for OpenAI, the hotel's own website (and its booking engine) is the main cited source. Both are patterns in citations, not proof of what drives a recommendation.
 
