@@ -9,6 +9,7 @@ any change upstream:
 
 import itertools
 import json
+import re
 
 import pandas as pd
 
@@ -16,6 +17,28 @@ from src.common import PROCESSED, ROOT, SETTINGS
 from src.compute_metrics import load, recommendations
 
 METRICS = PROCESSED / "metrics"
+# OTA brands (country variants such as tr.hotels.com or trivago.com.tr fold into one brand) and their
+# corporate groups. Used only for the descriptive OTA breakdown, not for any pre-defined metric.
+OTA_BRANDS = [  # (pattern matched against the domain, brand, group)
+    (r"(^|\.)booking\.com$", "Booking.com", "Booking Holdings"),
+    (r"(^|\.)kayak\.", "Kayak", "Booking Holdings"),
+    (r"(^|\.)agoda\.com$", "Agoda", "Booking Holdings"),
+    (r"(^|\.)hotelscombined\.", "HotelsCombined", "Booking Holdings"),
+    (r"(^|\.)hotels\.com$|(^|\.)hoteles\.com$", "Hotels.com", "Expedia Group"),
+    (r"(^|\.)expedia\.", "Expedia", "Expedia Group"),
+    (r"(^|\.)trivago\.", "Trivago", "Expedia Group"),
+    (r"(^|\.)travelocity\.com$", "Travelocity", "Expedia Group"),
+    (r"(^|\.)fewo-direkt\.de$|(^|\.)vrbo\.com$", "Vrbo", "Expedia Group"),
+    (r"(^|\.)trip\.com$", "Trip.com", "Trip.com Group"),
+    (r"(^|\.)skyscanner\.", "Skyscanner", "Trip.com Group"),
+    (r"(^|\.)airbnb\.", "Airbnb", "Airbnb"),
+    (r"(^|\.)cozycozy\.com$", "Cozycozy", "Other OTAs and directories"),
+    (r"(^|\.)google\.", "Google Hotels", "Google"),
+    (r"(^|\.)(etstur|enuygun|tatilbudur|otelz|tatilsepeti|jollytur|obilet|turna|kucukoteller)\.com(\.tr)?$"
+     r"|(^|\.)setur\.com\.tr$", "Turkish OTAs (combined)", "Turkish OTAs"),
+]
+TURKISH_OTAS = "Etstur, Enuygun, Tatilbudur, Otelz, Tatilsepeti, Setur, Jolly, Obilet, Turna, Küçük Oteller"
+DIRECTORIES = "Directories and other OTAs"
 ENGINES = {"openai": "OpenAI", "gemini": "Gemini", "anthropic": "Anthropic"}
 LANGUAGES = {"en": "English", "tr": "Turkish", "de": "German", "ru": "Russian"}
 
@@ -26,6 +49,32 @@ def pct(value: float, digits: int = 0) -> str:
 
 def table(name: str) -> pd.DataFrame:
     return pd.read_parquet(METRICS / f"{name}.parquet")
+
+
+def ota_brand(domain: str) -> tuple[str, str]:
+    for pattern, brand, group in OTA_BRANDS:
+        if re.search(pattern, domain or ""):
+            return brand, group
+    return DIRECTORIES, "Other OTAs and directories"
+
+
+def ota_breakdown() -> dict:
+    """Descriptive: which OTAs back recommendations. Shares are of (recommendation, brand) pairs, so
+    several country domains of one brand on the same recommendation count once."""
+    links = table("citation_links")
+    ota = links[links.category == "ota"].copy()
+    ota[["brand", "group"]] = ota.domain.map(ota_brand).tolist()
+    pairs = ota.drop_duplicates(["rec_index", "brand"])
+    return {
+        "pairs": len(pairs),
+        "brands": pairs.brand.value_counts(normalize=True),
+        "groups": ota.drop_duplicates(["rec_index", "group"]).group.value_counts(normalize=True),
+        "by_engine": {e: g.brand.value_counts(normalize=True).head(3) for e, g in pairs.groupby("engine")},
+        "turkish_by_language": pairs.assign(tr=pairs.group == "Turkish OTAs").groupby("language").tr.mean(),
+        "directory_examples": ota[ota.brand == DIRECTORIES].domain.value_counts().head(4).index,
+        "largest_directory": (ota[ota.brand == DIRECTORIES].drop_duplicates(["rec_index", "domain"])
+                              .domain.value_counts().iloc[0] / len(pairs)),
+    }
 
 
 def facts() -> dict:
@@ -97,6 +146,7 @@ def facts() -> dict:
         "robust": robust, "robust_verdict": robust.verdict.iloc[0],
         "stability": stability["mean"].to_dict(),
         "quality": pd.read_parquet(quality).set_index("metric") if quality.exists() else None,
+        "ota": ota_breakdown(),
     }
 
 
@@ -117,6 +167,18 @@ def render(f: dict) -> str:
         f"| {'All engines' if e is None else ENGINES[e]} | {pct(f['share']('ota', e))} | "
         f"{pct(f['share']('own_website', e))} | {pct(f['share']('blog_media', e))} | "
         f"{pct(f['share']('review_site', e))} | {pct(f['share']('other', e))} |" for e in [None, *ENGINES])
+    o = f["ota"]
+    top_brands = o["brands"][o["brands"] >= 0.02]
+    ota_brand_table = "| OTA | Share |\n|---|---|\n" + "\n".join(f"| {b} | {pct(v)} |" for b, v in top_brands.items()) \
+        + f"\n| Others (under 2% each) | {pct(o['brands'][o['brands'] < 0.02].sum())} |"
+    ota_groups = ", ".join(f"{g} {pct(v)}" for g, v in o["groups"].items()
+                           if g != "Other OTAs and directories" and v >= 0.01)
+    ota_engines = "; ".join(f"{ENGINES[e]}: " + ", ".join(f"{b} {pct(v)}" for b, v in top.items())
+                            for e, top in o["by_engine"].items())
+    other_langs = o["turkish_by_language"].drop("tr")
+    ota_tr_tr = pct(o["turkish_by_language"]["tr"])
+    low, high = pct(other_langs.min()), pct(other_langs.max())
+    ota_tr_other = low if low == high else f"{low}-{high}"
     if f["quality"] is not None:
         q = f["quality"]
         quality = (f"Hand-check of 30 answers (stratified by engine and language; "
@@ -177,6 +239,20 @@ Each citation is linked to the recommended places named in the same part of the 
 - **Robust:** leaving out the domains categorised by the AI gives the same picture (OTA {pct(r.at['all', 'ota'])} vs own website {pct(r.at['all', 'own_website'])}; verdict {f['robust_verdict']}).
 - **Gemini often attaches no source** to a recommended place ({pct(h.at['gemini', 'no_source'])}).
 - **What this suggests for HotelRunner:** the content hotels distribute through OTAs is what Gemini and Anthropic cite most, so channel content plausibly shapes visibility there; for OpenAI, the hotel's own website (and its booking engine) is the main cited source. Both are patterns in citations, not proof of what drives a recommendation.
+
+### Which OTAs
+
+*Descriptive breakdown added after the results (not one of the metrics fixed in advance). Shares are of
+(recommended place, OTA brand) pairs: {f['ota']['pairs']} pairs; a brand's country sites count once per
+recommendation. "OTA" includes metasearch (e.g. Trivago, Kayak) and hotel directories that send travelers on to
+book, as defined in `config/domains.yaml`.*
+
+{ota_brand_table}
+
+- **By corporate group:** {ota_groups}.
+- **Each engine has its own favourites:** {ota_engines}.
+- **Language matters for local OTAs:** Turkish OTAs ({TURKISH_OTAS}) make up {ota_tr_tr} of the OTA pairs in Turkish answers, versus {ota_tr_other} in English, German and Russian answers.
+- **Directories and other OTAs** (e.g. {', '.join(f['ota']['directory_examples'])}) are a large, fragmented group: the largest single site in it has {pct(f['ota']['largest_directory'], 1)}.
 
 ## 5. Recommendations that are not a Kaş place in our list
 

@@ -16,7 +16,7 @@ Metric definitions were fixed in advance in [metrics.md](metrics.md); caveats ar
 - **Destination:** Kaş town, the Çukurbağ peninsula and Limanağzı (hand-drawn boundary); 479 places to stay from Google Maps, including 21 found only through the answers.
 - **Questions:** 20 traveler questions from 8 personas (couples, families, divers, remote workers, retirees, pet owners, honeymooners, road-trippers), each written naturally in English, Turkish, German and Russian.
 - **Engines:** OpenAI (gpt-6-luna), Google Gemini (gemini-3.8-flash) and Anthropic (claude-haiku-5-5), each with its own web search, through the API; every question asked 3 times.
-- **Scale:** 720 answers (0 failed), 4032 named places, 3630 recommendations; 82% of named places matched to the Kaş list automatically. Total API spend $22.91, plus 1338 free Serper credits.
+- **Scale:** 720 answers (0 failed), 4032 named places, 3630 recommendations; 82% of named places matched to the Kaş list automatically. Total API spend $22.94, plus 1338 free Serper credits.
 
 ## 2. Who gets recommended
 
@@ -53,6 +53,33 @@ Each citation is linked to the recommended places named in the same part of the 
 - **Robust:** leaving out the domains categorised by the AI gives the same picture (OTA 63% vs own website 23%; verdict mixed).
 - **Gemini often attaches no source** to a recommended place (22%).
 - **What this suggests for HotelRunner:** the content hotels distribute through OTAs is what Gemini and Anthropic cite most, so channel content plausibly shapes visibility there; for OpenAI, the hotel's own website (and its booking engine) is the main cited source. Both are patterns in citations, not proof of what drives a recommendation.
+
+### Which OTAs
+
+*Descriptive breakdown added after the results (not one of the metrics fixed in advance). Shares are of
+(recommended place, OTA brand) pairs: 3678 pairs; a brand's country sites count once per
+recommendation. "OTA" includes metasearch (e.g. Trivago, Kayak) and hotel directories that send travelers on to
+book, as defined in `config/domains.yaml`.*
+
+| OTA | Share |
+|---|---|
+| Directories and other OTAs | 22% |
+| Booking.com | 21% |
+| Turkish OTAs (combined) | 11% |
+| Hotels.com | 11% |
+| Trivago | 7% |
+| Expedia | 6% |
+| Trip.com | 6% |
+| Airbnb | 5% |
+| Cozycozy | 4% |
+| Kayak | 3% |
+| Agoda | 2% |
+| Others (under 2% each) | 3% |
+
+- **By corporate group:** Booking Holdings 27%, Expedia Group 22%, Turkish OTAs 12%, Trip.com Group 7%, Airbnb 5%.
+- **Each engine has its own favourites:** Anthropic: Directories and other OTAs 24%, Booking.com 23%, Turkish OTAs (combined) 8%; Gemini: Directories and other OTAs 20%, Turkish OTAs (combined) 15%, Hotels.com 13%; OpenAI: Booking.com 44%, Directories and other OTAs 21%, Airbnb 11%.
+- **Language matters for local OTAs:** Turkish OTAs (Etstur, Enuygun, Tatilbudur, Otelz, Tatilsepeti, Setur, Jolly, Obilet, Turna, Küçük Oteller) make up 31% of the OTA pairs in Turkish answers, versus 6% in English, German and Russian answers.
+- **Directories and other OTAs** (e.g. theturquoisecollection.com, bringfido.com, travelmyth.com, bringfido.co.uk) are a large, fragmented group: the largest single site in it has 2.5%.
 
 ## 5. Recommendations that are not a Kaş place in our list
 
