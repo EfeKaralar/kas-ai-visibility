@@ -47,7 +47,7 @@ Streamlit app (6 pages + live-query box), 6 PNG charts, findings summary, `docs/
 Charts: coverage by engine; top-5 concentration + long tail; recommendations vs review count; citation categories by engine/language; own site vs OTA per recommendation; unmatched by category.
 
 ## User gates
-(a) approve polygon · (b) personas and attributes · (c) review 80 prompts · (d) label 30 answers.
+(a) approve polygon · (b) personas and attributes · (c) review 80 prompts · (d) label 30 answers. All four completed; (d) on 2026-10-23 with no errors found (precision and recall 100%, 95% interval 97.2-100%).
 
 ## Later
 Stretch (listing attribute check) only after Steps 1–5.

@@ -69,7 +69,7 @@ Asking the same question again gives a different list: the mean overlap (Jaccard
 ## 7. How reliable are these numbers
 
 - Sanity checks pass: all answers present, every place id valid, no duplicate rows, every citation span inside its answer.
-- Hand-check of 30 answers: **pending** (sheet in `data/review/hand_check.csv`).
+- Hand-check of 30 answers (stratified by engine and language; 132 matched places checked by the project owner, no errors found): precision 100% (95% interval 97%-100%), recall 100% (97%-100%).
 - Names the automatic matcher could not resolve were looked up on Google Maps; the most frequent doubtful ones were checked by hand (`config/manual_verifications.yaml`).
 - Domain categories: the most-cited domains covering 80% of citations were categorised by hand; the rest by AI, with the robustness check above.
 

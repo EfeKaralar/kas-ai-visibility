@@ -19,6 +19,9 @@ Kept from day 1 for the presentation and later analysis.
 - Google categories are owner-chosen and inconsistent (many pensions are listed as hotels).
 - Destination boundary is a hand-drawn polygon (Kaş town + Çukurbağ peninsula); coverage is sensitive to it, so distance from center is stored for every place.
 
+## Matcher accuracy
+- The hand-check covered 30 answers (2-3 per engine x language, fixed seed) with 132 matched places; the project owner found no errors, giving precision and recall of 100% with 95% Wilson intervals of 97.2-100%. The check was done by one person as an overall review of the sample, and mentions within one answer are not independent, so the true error rate may be somewhat higher than the interval suggests. The sample was drawn before 21 found places were added to the list; those changes do not affect matched rows.
+
 ## Unmatched places
 - **Closed places are invisible to the automatic lookup.** Serper's Google Maps results omit permanently closed places entirely (no result and no status field), although Google itself shows them as "Permanently closed". Automatic categories "osm_only" and "unverifiable" can therefore contain closed places. Example: Hotel Cachet, recommended in 8 of 48 pilot answers, is permanently closed per Google Maps and Tripadvisor (checked by hand on 2026-10-22).
 - **18% of mentions do not match the Kaş place list (82% match).** This is acceptable for the PoC: most of the remainder is very likely in Kaş municipality/district but outside our chosen town boundary (e.g. Kalkan, Patara, Gelemiş), and the boundary decision is revisited after the results. To save Serper credits, only the 80 unmatched names mentioned 2+ times were looked up (they hold about 80% of unmatched mentions); 155 names mentioned once are labelled "not looked up".

@@ -119,7 +119,9 @@ def render(f: dict) -> str:
         f"{pct(f['share']('review_site', e))} | {pct(f['share']('other', e))} |" for e in [None, *ENGINES])
     if f["quality"] is not None:
         q = f["quality"]
-        quality = (f"Hand-check of 30 answers: precision {pct(q.at['precision', 'value'])} "
+        quality = (f"Hand-check of 30 answers (stratified by engine and language; "
+                   f"{int(q.at['precision', 'denominator'])} matched places checked by the project owner, "
+                   f"no errors found): precision {pct(q.at['precision', 'value'])} "
                    f"(95% interval {pct(q.at['precision', 'low_95'])}-{pct(q.at['precision', 'high_95'])}), "
                    f"recall {pct(q.at['recall', 'value'])} "
                    f"({pct(q.at['recall', 'low_95'])}-{pct(q.at['recall', 'high_95'])}).")
